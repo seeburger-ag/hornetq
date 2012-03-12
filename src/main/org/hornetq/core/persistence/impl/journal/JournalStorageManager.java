@@ -3064,6 +3064,11 @@ public class JournalStorageManager implements StorageManager
 
    public static Object newObjectEncoding(RecordInfo info)
    {
+      return newObjectEncoding(info, null);
+   }
+
+   public static Object newObjectEncoding(RecordInfo info, JournalStorageManager storageManager)
+   {
       HornetQBuffer buffer = HornetQBuffers.wrappedBuffer(info.data);
       long id = info.id;
       int rec = info.getUserRecordType();
@@ -3080,7 +3085,7 @@ public class JournalStorageManager implements StorageManager
          case ADD_LARGE_MESSAGE:
          {
 
-            LargeServerMessage largeMessage = new LargeServerMessageImpl(null);
+            LargeServerMessage largeMessage = new LargeServerMessageImpl(storageManager);
 
             LargeMessageEncoding messageEncoding = new LargeMessageEncoding(largeMessage);
 
@@ -3231,7 +3236,7 @@ public class JournalStorageManager implements StorageManager
 
    public static class AckDescribe
    {
-      RefEncoding refEncoding;
+      public RefEncoding refEncoding;
 
       public AckDescribe(RefEncoding refEncoding)
       {
@@ -3284,6 +3289,11 @@ public class JournalStorageManager implements StorageManager
          buffer.append(" - " + msg.toString());
 
          return buffer.toString();
+      }
+
+      public Message getMsg()
+      {
+         return msg;
       }
 
    }
