@@ -1231,7 +1231,10 @@ public class JournalStorageManager implements StorageManager
 
          if (queue == null)
          {
-            log.warn("Message for queue " + queueID + " which does not exist. This message will be ignored.");
+            if (queueRecords.values().size() != 0)
+            {
+               log.warn("Message for queue " + queueID + " which does not exist. This message will be ignored.");
+            }
 
             continue;
          }
@@ -3071,8 +3074,6 @@ public class JournalStorageManager implements StorageManager
    {
       return "recordID=" + info.id + ";userRecordType=" + info.userRecordType + ";isUpdate=" + info.isUpdate + ";" + o;
    }
-
-   // Encoding functions for binding Journal
 
    public static Object newObjectEncoding(RecordInfo info)
    {

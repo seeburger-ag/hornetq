@@ -116,7 +116,7 @@ public class RemoteQueueBindImplTest extends UnitTestCase
       public void setInternalQueue(boolean internalQueue)
       {
          // TODO Auto-generated method stub
-         
+
       }
 
       /* (non-Javadoc)
@@ -656,7 +656,7 @@ public class RemoteQueueBindImplTest extends UnitTestCase
       public void forceDelivery()
       {
          // TODO Auto-generated method stub
-         
+
       }
 
       /* (non-Javadoc)
@@ -675,6 +675,24 @@ public class RemoteQueueBindImplTest extends UnitTestCase
       {
          // TODO Auto-generated method stub
          return 0;
+      }
+
+      /* (non-Javadoc)
+       * @see org.hornetq.core.server.Queue#addHead(java.util.LinkedList)
+       */
+      public void addHead(LinkedList<MessageReference> refs)
+      {
+         // TODO Auto-generated method stub
+
+      }
+
+      /* (non-Javadoc)
+       * @see org.hornetq.core.server.Queue#destroyPaging()
+       */
+      public void destroyPaging()
+      {
+         // TODO Auto-generated method stub
+
       }
 
    }
