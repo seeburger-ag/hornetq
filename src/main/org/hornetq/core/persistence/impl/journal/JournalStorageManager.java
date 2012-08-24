@@ -160,6 +160,8 @@ public class JournalStorageManager implements StorageManager
 
    public static final byte PAGE_CURSOR_COUNTER_INC = 41;
 
+   public static final byte PAGE_CURSOR_COMPLETE = 42;
+
    private final Semaphore pageMaxConcurrentIO;
 
    private final BatchingIDGenerator idGenerator;
@@ -709,6 +711,24 @@ public class JournalStorageManager implements StorageManager
    }
 
    /* (non-Javadoc)
+    * @see org.hornetq.core.persistence.StorageManager#storeCursorAcknowledgeTransactional(long, long, org.hornetq.core.paging.cursor.PagePosition)
+    */
+   public void storePageCompleteTransactional(long txID, long queueID, PagePosition position) throws Exception
+   {
+      long recordID = idGenerator.generateID();
+      position.setRecordID(recordID);
+      messageJournal.appendAddRecordTransactional(txID,
+                                                  recordID,
+                                                  PAGE_CURSOR_COMPLETE,
+                                                  new CursorAckRecordEncoding(queueID, position));
+   }
+
+   public void deletePageComplete(long ackID) throws Exception
+   {
+      messageJournal.appendDeleteRecord(ackID, false);
+   }
+
+   /* (non-Javadoc)
     * @see org.hornetq.core.persistence.StorageManager#deleteCursorAcknowledgeTransactional(long, long)
     */
    public void deleteCursorAcknowledgeTransactional(long txID, long ackID) throws Exception
@@ -1205,6 +1225,29 @@ public class JournalStorageManager implements StorageManager
 
                break;
             }
+
+            case PAGE_CURSOR_COMPLETE:
+            {
+               CursorAckRecordEncoding encoding = new CursorAckRecordEncoding();
+               encoding.decode(buff);
+
+               encoding.position.setRecordID(record.id);
+
+               PageSubscription sub = locateSubscription(encoding.queueID, pageSubscriptions, queueInfos, pagingManager);
+
+               if (sub != null)
+               {
+                  sub.reloadPageCompletion(encoding.position);
+               }
+               else
+               {
+                  log.info("Can't find queue " + encoding.queueID + " while reloading PAGE_CURSOR_COMPLETE, deleting record now");
+                  messageJournal.appendDeleteRecord(record.id, false);
+               }
+
+               break;
+             }
+
             default:
             {
                throw new IllegalStateException("Invalid record type " + recordType);
@@ -3207,6 +3250,15 @@ public class JournalStorageManager implements StorageManager
             return encoding;
          }
 
+         case PAGE_CURSOR_COMPLETE:
+         {
+            CursorAckRecordEncoding encoding = new CursorAckRecordEncoding();
+
+            encoding.decode(buffer);
+
+            return encoding;
+         }
+
          case JournalStorageManager.QUEUE_BINDING_RECORD:
             return newBindingEncoding(id, buffer);
 
@@ -3369,7 +3421,7 @@ public class JournalStorageManager implements StorageManager
    {
       return Base64.encodeBytes(data, 0, data.length, Base64.DONT_BREAK_LINES | Base64.URL_SAFE);
    }
-   
+
    private static Xid toXid(final byte[] data)
    {
       try
