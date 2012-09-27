@@ -2033,14 +2033,16 @@ public class JournalStorageManager implements StorageManager
                                                             pageSubscriptions,
                                                             queueInfos,
                                                             pagingManager);
+                  
 
                   if (sub != null)
                   {
                      sub.getCounter().applyIncrement(tx, record.id, encoding.value);
+                     sub.notEmpty();
                   }
                   else
                   {
-                     log.warn("Can't find queue " + encoding.queueID + " while reloading ACKNOWLEDGE_CURSOR");
+                     log.warn("Can't find queue " + encoding.queueID + " while reloading PAGE_CURSOR_COUNTER_INC");
                   }
 
                   break;
