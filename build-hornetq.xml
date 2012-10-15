@@ -211,27 +211,36 @@
    <path id="jms.compilation.classpath">
       <path location="${build.core.classes.dir}"/>
    	  <path refid="org.jboss.netty.classpath"/>
-      <path refid="org.jboss.javaee.classpath"/>
-      <path refid="org.jboss.integration.classpath"/>
-      <path refid="jboss.jbossts.classpath"/>
+      <path refid="org.jboss.spec.javax.security.auth.message.classpath"/>
+      <path refid="org.jboss.spec.javax.jms.classpath"/>
+      <path refid="org.jboss.classpath"/>
+      <path refid="org.jboss.spec.javax.transaction.classpath"/>
+      <path refid="org.jboss.spec.javax.resource.classpath"/>
+      <path refid="org.jboss.jbossts.classpath"/>
       <path refid="org.jboss.naming.classpath"/>
     </path>
 
    <path id="jms.compilation.jdk15.classpath">
       <path location="${build.core.client.java5.classes.dir}"/>
    	  <path refid="org.jboss.netty.classpath"/>
-      <path refid="org.jboss.javaee.classpath"/>
-      <path refid="org.jboss.integration.classpath"/>
-      <path refid="jboss.jbossts.classpath"/>
+      <path refid="org.jboss.spec.javax.security.auth.message.classpath"/>
+      <path refid="org.jboss.spec.javax.jms.classpath"/>
+      <path refid="org.jboss.classpath"/>
+      <path refid="org.jboss.spec.javax.transaction.classpath"/>
+      <path refid="org.jboss.spec.javax.resource.classpath"/>
+      <path refid="org.jboss.jbossts.classpath"/>
       <path refid="org.jboss.naming.classpath"/>
     </path>
 
 
    <path id="jboss.integration.compilation.classpath">
       <path location="${build.core.classes.dir}"/>
-      <path refid="org.jboss.security.classpath"/>
-      <path refid="org.jboss.integration.classpath"/>
-      <path refid="org.jboss.javaee.classpath"/>
+      <path refid="org.picketbox.classpath"/>
+      <path refid="org.jboss.classpath"/>
+      <path refid="org.jboss.spec.javax.transaction.classpath"/>
+      <path refid="org.jboss.spec.javax.resource.classpath"/>
+      <path refid="org.jboss.spec.javax.security.auth.message.classpath"/>
+      <path refid="org.jboss.spec.javax.jms.classpath"/>
       <path refid="org.jboss.msc.classpath"/>
       <pathelement location="${org.jboss.logging.lib}/jboss-logging.jar"/>
    </path>
@@ -244,12 +253,14 @@
    <path id="spring.integration.compilation.classpath">
       <path location="${build.core.classes.dir}"/>
       <path location="${build.jms.classes.dir}"/>
-      <path refid="org.jboss.javaee.classpath"/>
+      <path refid="org.jboss.spec.javax.security.auth.message.classpath"/>
+      <path refid="org.jboss.spec.javax.jms.classpath"/>
       <path refid="org.springframework.classpath"/>
    </path>
 
    <path id="jboss.service.compilation.classpath">
-      <path refid="org.jboss.javaee.classpath"/>
+      <path refid="org.jboss.spec.javax.security.auth.message.classpath"/>
+      <path refid="org.jboss.spec.javax.jms.classpath"/>
       <path location="${build.core.classes.dir}"/>
       <path location="${build.jboss.integration.classes.dir}"/>
    </path>
@@ -292,7 +303,7 @@
       <path refid="bootstrap.compilation.classpath"/>
       <path refid="jms.compilation.classpath"/>
       <path refid="junit.junit.classpath"/>
-      <path refid="org.jboss.security.classpath"/>
+      <path refid="org.picketbox.classpath"/>
       <path location="${build.jars.dir}/${core.jar.name}"/>
       <path location="${build.jars.dir}/${jms.jar.name}"/>
       <path location="${build.jars.dir}/${jboss.integration.jar.name}"/>
@@ -330,7 +341,7 @@
       <path refid="test.compilation.classpath"/>
       <path refid="sun.jaxb.classpath"/>
       <path refid="org.jboss.logging.classpath"/>
-      <path refid="jboss.jbossts.classpath"/>
+      <path refid="org.jboss.jbossts.classpath"/>
       <path refid="apache.xerces.classpath"/>
       <path refid="log4j.log4j.classpath"/>
       <path refid="org.jboss.netty.classpath"/>
@@ -359,7 +370,7 @@
       <path refid="sun.jaxb.classpath"/>
       <path refid="org.jboss.logging.classpath"/>
       <path refid="org.jboss.naming.classpath"/>
-      <path refid="jboss.jbossts.classpath"/>
+      <path refid="org.jboss.jbossts.classpath"/>
       <path refid="apache.xerces.classpath"/>
       <path refid="log4j.log4j.classpath"/>
       <path refid="org.jboss.netty.classpath"/>
@@ -384,7 +395,7 @@
       <path refid="sun.jaxb.classpath"/>
       <path refid="org.jboss.logging.classpath"/>
       <path refid="org.jboss.naming.classpath"/>
-      <path refid="jboss.jbossts.classpath"/>
+      <path refid="org.jboss.jbossts.classpath"/>
       <path refid="apache.xerces.classpath"/>
       <path refid="log4j.log4j.classpath"/>
 	  <!-- we must include Apache commons logging   -->
@@ -793,7 +804,7 @@
    </target>
 
    <target name="jar"
-           depends="jar-core, jar-core-client, jar-core-client-java5, jar-jms, jar-jms-client, jar-jms-client-java5, jar-jboss-integration, jar-jboss-service, jar-bootstrap, jar-logging, jar-ra, jar-mc, jar-jnp-client, jar-resources, sources-jar, jar-twitter-integration, jar-spring-integration, jar-rest">
+           depends="jar-core, jar-core-client, jar-core-client-java5, jar-jms, jar-jms-client, jar-jms-client-java5, jar-jboss-integration, jar-jboss-service, jar-logging, jar-ra, jar-mc, jar-jnp-client, jar-resources, sources-jar">
    </target>
 
    <target name="jar-jnp-client" depends="init">
@@ -803,7 +814,7 @@
             <include name="org/jboss/naming/**/*.class"/>
             <include name="org/jnp/server/NamingServer_Stub.class"/>
          </zipfileset>
-         <zipfileset src="${org.jboss.logging.lib}/jboss-logging-spi.jar">
+         <zipfileset src="${org.jboss.logging.lib}/jboss-logging.jar">
             <include name="org/jboss/logging/**/*.class"/>
          </zipfileset>
       </jar>
@@ -811,14 +822,8 @@
 
    <target name="jar-mc" depends="init">
       <jar jarfile="${build.jars.dir}/${mc.jar.name}">
-         <zipfileset src="./thirdparty/org/jboss/logging/lib/jboss-logging-spi.jar"/>
-         <zipfileset src="./thirdparty/org/jboss/microcontainer/lib/jboss-kernel.jar"/>
-         <zipfileset src="./thirdparty/org/jboss/microcontainer/lib/jboss-dependency.jar"/>
-         <zipfileset src="./thirdparty/org/jboss/lib/jboss-reflect.jar"/>
+         <zipfileset src="./thirdparty/org/jboss/logging/lib/jboss-logging.jar"/>
          <zipfileset src="./thirdparty/org/jboss/lib/jboss-common-core.jar"/>
-         <zipfileset src="./thirdparty/org/jboss/lib/jboss-mdr.jar"/>
-         <zipfileset src="./thirdparty/org/jboss/lib/jbossxb.jar"/>
-         <zipfileset src="./thirdparty/sun-jaxb/lib/jaxb-api.jar"/>
       </jar>
    </target>
 

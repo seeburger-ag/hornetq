@@ -10,13 +10,15 @@ Copyright 2009 Red Hat, Inc.
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
  implied.  See the License for the specific language governing
  permissions and limitations under the License.
-  -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
    <modelVersion>4.0.0</modelVersion>
    <groupId>org.hornetq</groupId>
+   <parent>
+        <artifactId>jboss-parent</artifactId>
+        <groupId>org.jboss</groupId>
+        <version>9-redhat-1</version>
+    </parent>
    <artifactId>messaging</artifactId>
    <packaging>pom</packaging>
    <version>2.2.24.Snapshot</version>
@@ -26,21 +28,7 @@ Copyright 2009 Red Hat, Inc.
     </properties>
 
    <name>HornetQ</name>
-   <url>http://hornetq.org</url>
-   <description>
-      Putting the buzz in messaging
-   </description>
-
-   <organization>
-      <name>JBoss, a division of Red Hat</name>
-      <url>http://www.jboss.org/</url>
-   </organization>
-
-   <scm>
-      <connection>scm:git:git://github.com/hornetq/hornetq.git</connection>
-      <developerConnection>scm:git://github.com/hornetq/hornetq.git</developerConnection>
-      <url>https://github.com/hornetq/hornetq</url>
-   </scm>
+   <description>Putting the buzz in messaging</description>
 
    <profiles>
       <profile>
@@ -60,12 +48,24 @@ Copyright 2009 Red Hat, Inc.
      </profile>
    </profiles>
 
+   <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.jboss.component.management</groupId>
+                <artifactId>jboss-dependency-management-all</artifactId>
+                <version>6.0.1-redhat-1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
    <build>
       <plugins>
          <plugin>
             <groupId>org.jboss.maven.plugins</groupId>
             <artifactId>maven-buildmagic-thirdparty-plugin</artifactId>
-            <version>2.2.1.Final</version>
+            <version>2.2.0</version>
             <executions>
                <execution>
                   <id>build-thirdparty</id>
@@ -98,13 +98,12 @@ Copyright 2009 Red Hat, Inc.
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
-            <version>1.3</version>
             <executions>
                <execution>
                   <id>clean</id>
                   <phase>pre-clean</phase>
                   <configuration>
-                     <tasks name="distro"/>
+                     <tasks name="distro" />
                   </configuration>
                   <goals>
                      <goal>run</goal>
@@ -115,8 +114,8 @@ Copyright 2009 Red Hat, Inc.
                   <phase>package</phase>
                   <configuration>
                      <tasks>
-                        <property name="maven.build"  value="true"/>
-                        <ant target="distro"/>
+                        <property name="maven.build" value="true" />
+                        <ant target="distro" />
                      </tasks>
                   </configuration>
                   <goals>
@@ -183,7 +182,6 @@ Copyright 2009 Red Hat, Inc.
          <plugin>
            <groupId>org.codehaus.mojo</groupId>
            <artifactId>exec-maven-plugin</artifactId>
-           <version>1.2.1</version>
            <executions>
              <execution>
                <phase>test</phase>
@@ -207,200 +205,139 @@ Copyright 2009 Red Hat, Inc.
    </build>
 
    <dependencies>
-     <dependency>
+     <!-- <dependency>
        <groupId>org.jboss.resteasy</groupId>
        <artifactId>resteasy-jaxrs</artifactId>
-       <version>${resteasy.version}</version>
      </dependency>
      <dependency>
        <groupId>org.jboss.resteasy</groupId>
        <artifactId>resteasy-jaxb-provider</artifactId>
-       <version>${resteasy.version}</version>
-     </dependency>
+     </dependency> -->
       <!--needed for the filters-->
       <dependency>
         <groupId>net.java.dev.javacc</groupId>
         <artifactId>javacc</artifactId>
-        <version>4.0</version>
       </dependency>
       <!-- needed to compile JMS-->
       <dependency>
-        <groupId>org.jboss.javaee</groupId>
-        <artifactId>jboss-jms-api</artifactId>
-        <version>1.1.0.GA</version>
+        <groupId>org.jboss.spec.javax.jms</groupId>
+        <artifactId>jboss-jms-api_1.1_spec</artifactId>
       </dependency>
       <!-- needed to compile JavaEE examples-->
       <dependency>
-        <groupId>org.jboss.javaee</groupId>
-        <artifactId>jboss-ejb-api</artifactId>
-        <version>3.0.0.GA</version>
+        <groupId>org.jboss.spec.javax.resource</groupId>
+        <artifactId>jboss-connector-api_1.6_spec</artifactId>
       </dependency>
       <dependency>
-        <groupId>org.jboss.javaee</groupId>
-        <artifactId>jboss-transaction-api</artifactId>
-        <version>1.0.1.GA</version>
+        <groupId>org.jboss.spec.javax.transaction</groupId>
+        <artifactId>jboss-transaction-api_1.1_spec</artifactId>
       </dependency>
       <!--this specifically for the JMS Bridge-->
       <dependency>
-        <groupId>org.jboss.integration</groupId>
+        <groupId>org.jboss</groupId>
         <artifactId>jboss-transaction-spi</artifactId>
-        <version>5.1.0.GA</version>
       </dependency>
       <!--this for xa recovery-->
       <dependency>
-        <groupId>jboss.jbossts</groupId>
+        <groupId>org.jboss.jbossts</groupId>
         <artifactId>jbossjts</artifactId>
-        <version>4.6.1.GA</version>
       </dependency>
       <!--needed to compile security-->
       <dependency>
-        <groupId>org.jboss.security</groupId>
+        <groupId>org.picketbox</groupId>
         <artifactId>jboss-security-spi</artifactId>
-        <version>2.0.3.SP1</version>
       </dependency>
       <dependency>
-        <groupId>org.jboss.security</groupId>
+        <groupId>org.picketbox</groupId>
         <artifactId>jbosssx</artifactId>
-        <version>2.0.3.SP1</version>
       </dependency>
       <!--needed to compile the bootstrap jar-->
-      <dependency>
+      <!-- <dependency>
         <groupId>org.jboss.microcontainer</groupId>
         <artifactId>jboss-kernel</artifactId>
-        <version>2.0.6.GA</version>
-      </dependency>
+      </dependency> -->
       <dependency>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-common-core</artifactId>
-        <version>2.2.18.GA</version>
       </dependency>
       <!--needed to compile transport jar-->
       <dependency>
          <groupId>org.jboss.netty</groupId>
          <artifactId>netty</artifactId>
-         <version>3.2.6.Final</version>
       </dependency>
       <!--needed to compile the logging jar-->
       <dependency>
          <groupId>log4j</groupId>
          <artifactId>log4j</artifactId>
-         <version>1.2.14</version>
       </dependency>
       <!--needed to compile the integration jar-->
       <dependency>
          <groupId>org.jboss.logging</groupId>
          <artifactId>jboss-logging</artifactId>
-         <version>3.1.0.CR1</version>
       </dependency>
       <dependency>
          <groupId>org.jboss.msc</groupId>
          <artifactId>jboss-msc</artifactId>
-         <version>1.0.1.GA</version>
       </dependency>
       <!--needed to compile twitter support-->
-      <dependency>
+      <!-- <dependency>
          <groupId>org.twitter4j</groupId>
            <artifactId>twitter4j-core</artifactId>
-           <version>2.1.6</version>
-       </dependency>
+       </dependency> -->
       <!-- needed to compile the tests-->
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>3.8.2</version>
       </dependency>
       <!--needed to compile the jms tests-->
       <dependency>
-        <groupId>org.jboss.javaee</groupId>
-        <artifactId>jboss-jaspi-api</artifactId>
-        <version>1.0.0.GA</version>
+        <groupId>org.jboss.spec.javax.security.auth.message</groupId>
+        <artifactId>jboss-jaspi-api_1.0_spec</artifactId>
       </dependency>
 
       <!--needed to run the jms tests-->
       <dependency>
         <groupId>org.jboss.naming</groupId>
         <artifactId>jnpserver</artifactId>
-        <version>5.0.3.GA</version>
       </dependency>
-      <dependency>
-        <groupId>jboss.jbossts</groupId>
+      <!-- <dependency>
+        <groupId>org.jboss.jbossts</groupId>
         <artifactId>jbossts-common</artifactId>
-        <version>4.6.1.GA</version>
-      </dependency>
-      <dependency>
+      </dependency> -->
+      <!-- <dependency>
         <groupId>apache-logging</groupId>
         <artifactId>commons-logging</artifactId>
-        <version>1.1.0.jboss</version>
-      </dependency>
+      </dependency> -->
 
       <!-- needed for javaee examples-->
-      <dependency>
+      <!-- <dependency>
         <groupId>org.jboss.ejb3</groupId>
         <artifactId>jboss-ejb3-ext-api</artifactId>
-        <version>1.0.0</version>
-      </dependency>
+      </dependency> -->
 
      <!-- needed for javadoc graphics-->
       <dependency>
         <groupId>org.jboss.apiviz</groupId>
         <artifactId>apiviz</artifactId>
-        <version>1.3.0.GA</version>
       </dependency>
        <!-- needed for spring integration -->
-       <dependency>
+       <!-- <dependency>
            <groupId>org.springframework</groupId>
            <artifactId>spring-core</artifactId>
-           <version>3.0.3.RELEASE</version>
        </dependency>
        <dependency>
            <groupId>org.springframework</groupId>
            <artifactId>spring-beans</artifactId>
-           <version>3.0.3.RELEASE</version>
        </dependency>
        <dependency>
            <groupId>org.springframework</groupId>
            <artifactId>spring-context</artifactId>
-           <version>3.0.3.RELEASE</version>
        </dependency>
        <dependency>
            <groupId>org.springframework</groupId>
            <artifactId>spring-jms</artifactId>
-           <version>3.0.3.RELEASE</version>
-       </dependency>
+       </dependency> -->
    </dependencies>
-
-
-   <repositories>
-      <repository>
-         <snapshots>
-            <enabled>false</enabled>
-            <updatePolicy>never</updatePolicy>
-         </snapshots>
-         <releases>
-            <enabled>true</enabled>
-            <updatePolicy>interval:10080</updatePolicy>
-         </releases>
-         <id>jboss.release</id>
-         <name>JBoss releases</name>
-         <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-      </repository>
-   </repositories>
-
-   <pluginRepositories>
-      <pluginRepository>
-         <snapshots>
-            <enabled>false</enabled>
-            <updatePolicy>never</updatePolicy>
-         </snapshots>
-         <releases>
-            <enabled>true</enabled>
-            <updatePolicy>interval:10080</updatePolicy>
-         </releases>
-         <id>jboss.release</id>
-         <name>JBoss releases</name>
-         <url>https://repository.jboss.org/nexus/content/groups/public</url>
-      </pluginRepository>
-   </pluginRepositories>
    <!--<profiles>
       --><!-- This profile is used by the ant/buildmagic build --><!--
       <profile>
@@ -419,4 +356,3 @@ Copyright 2009 Red Hat, Inc.
 
 
 </project>
-
