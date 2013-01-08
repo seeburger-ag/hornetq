@@ -13,7 +13,7 @@
   -->
 
 <project default="upload" name="HornetQ">
-   <property name="hornetq.version" value="2.2.13.SEE1"/>
+   <property name="hornetq.version" value="2.2.13.SEE1-SNAPSHOT"/>
    <property name="build.dir" value="build"/>
    <property name="jars.dir" value="${build.dir}/jars"/>
 
@@ -168,7 +168,7 @@
         <arg value="install:install-file"/>
         <!-- uncomment the following line to deploy to the JBoss 5 repository -->
         <!-- <arg value="-Dmaven.repo.local=/work/eap-51/maven-repository"/> -->
-        <arg value="-DgroupId=org.hornetq"/>
+        <arg value="-DgroupId=com.seeburger.as"/>
         <arg value="-DartifactId=${artifact.id}"/>
         <arg value="-Dversion=${hornetq.version}"/>
         <arg value="-Dpackaging=jar"/>
@@ -177,7 +177,7 @@
        <!-- install the sources jar -->
        <exec executable="${maven.executable}" dir="./build">
         <arg value="install:install-file"/>
-        <arg value="-DgroupId=org.hornetq"/>
+        <arg value="-DgroupId=com.seeburger.as"/>
         <!-- uncomment the following line to deploy to the JBoss 5 repository -->
         <!-- arg value="-Dmaven.repo.local=/work/eap/maven-repository"/ -->
         <arg value="-DartifactId=${artifact.id}"/>
@@ -193,7 +193,7 @@
       <exec executable="${maven.executable}">
          <arg value="deploy:deploy-file"/>
           <arg value="-e"/>
-         <arg value="-DgroupId=org.hornetq"/>
+         <arg value="-DgroupId=com.seeburger.as"/>
          <arg value="-DartifactId=${artifact.id}"/>
          <arg value="-Dversion=${hornetq.version}"/>
          <arg value="-Dpackaging=${artifact.type}"/>
@@ -206,7 +206,7 @@
       <exec executable="${maven.executable}">
          <arg value="deploy:deploy-file"/>
           <arg value="-e"/>
-         <arg value="-DgroupId=org.hornetq"/>
+         <arg value="-DgroupId=com.seeburger.as"/>
          <arg value="-DartifactId=${artifact.id}"/>
          <arg value="-Dversion=${hornetq.version}"/>
          <arg value="-Dpackaging=${artifact.type}"/>
@@ -314,7 +314,7 @@
      <arg value="-e"/>
      <arg value="deploy:deploy-file"/>
      <arg value="-DpomFile=${temporary.pom}"/>
-     <arg value="-DgroupId=org.hornetq"/>
+     <arg value="-DgroupId=com.seeburger.as"/>
      <arg value="-DartifactId=${artifact.id}"/>
      <arg value="-Dversion=${hornetq.version}"/>
      <arg value="-Dpackaging=jar"/>
@@ -327,7 +327,7 @@
      <arg value="-e"/>
      <arg value="deploy:deploy-file"/>
      <arg value="-DpomFile=${temporary.pom}"/>
-     <arg value="-DgroupId=org.hornetq"/>
+     <arg value="-DgroupId=com.seeburger.as"/>
      <arg value="-DartifactId=${artifact.id}"/>
      <arg value="-Dversion=${hornetq.version}"/>
      <arg value="-Dpackaging=jar"/>
