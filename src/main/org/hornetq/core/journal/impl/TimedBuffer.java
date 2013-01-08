@@ -34,22 +34,24 @@ import org.hornetq.core.logging.Logger;
  *
  * @author <a href="mailto:clebert.suconic@jboss.org">Clebert Suconic</a>
  * @author <a href="mailto:tim.fox@jboss.com">Tim Fox</a>
- *
  */
 public class TimedBuffer
 {
    // Constants -----------------------------------------------------
 
-   private static final Logger log = Logger.getLogger(TimedBuffer.class);
+   // The number of tries on sleep before switching to spin
+   public static final int MAX_CHECKS_ON_SLEEP = 20;
+
+   protected static final Logger log = Logger.getLogger(TimedBuffer.class);
 
    // Attributes ----------------------------------------------------
 
-   private TimedBufferObserver bufferObserver;
+   protected TimedBufferObserver bufferObserver;
 
    // If the TimedBuffer is idle - i.e. no records are being added, then it's pointless the timer flush thread
    // in spinning and checking the time - and using up CPU in the process - this semaphore is used to
    // prevent that
-   private final Semaphore spinLimiter = new Semaphore(1);
+   protected final Semaphore spinLimiter = new Semaphore(1);
 
    private CheckTimer timerRunnable = new CheckTimer();
 
@@ -61,10 +63,10 @@ public class TimedBuffer
 
    private List<IOAsyncTask> callbacks;
 
-   private volatile int timeout;
+   protected volatile int timeout;
 
    // used to measure sync requests. When a sync is requested, it shouldn't take more than timeout to happen
-   private volatile boolean pendingSync = false;
+   protected volatile boolean pendingSync = false;
 
    private Thread timerThread;
 
@@ -79,16 +81,17 @@ public class TimedBuffer
 
    private final boolean logRates;
 
-   private final AtomicLong bytesFlushed = new AtomicLong(0);
+   protected final AtomicLong bytesFlushed = new AtomicLong(0);
 
-   private final AtomicLong flushesDone = new AtomicLong(0);
+   protected final AtomicLong flushesDone = new AtomicLong(0);
 
    private Timer logRatesTimer;
 
    private TimerTask logRatesTimerTask;
 
-   private final AtomicLong lastFlushTime = new AtomicLong(0);
+   private boolean useSleep = true;
 
+   // no need to be volatile as every access is synchronized
    private boolean spinning = false;
 
    // Static --------------------------------------------------------
@@ -118,6 +121,17 @@ public class TimedBuffer
       callbacks = new ArrayList<IOAsyncTask>();
 
       this.timeout = timeout;
+   }
+
+   // for Debug purposes
+   public synchronized boolean isUseSleep()
+   {
+      return useSleep;
+   }
+
+   public synchronized void setUseSleep(boolean useSleep)
+   {
+      this.useSleep = useSleep;
    }
 
    public synchronized void start()
@@ -198,6 +212,7 @@ public class TimedBuffer
 
    /**
     * Verify if the size fits the buffer
+    *
     * @param sizeChecked
     */
    public synchronized boolean checkSize(final int sizeChecked)
@@ -210,7 +225,7 @@ public class TimedBuffer
       if (sizeChecked > bufferSize)
       {
          throw new IllegalStateException("Can't write records bigger than the bufferSize(" + bufferSize +
-                                         ") on the journal");
+            ") on the journal");
       }
 
       if (bufferLimit == 0 || buffer.writerIndex() + sizeChecked > bufferLimit)
@@ -269,21 +284,7 @@ public class TimedBuffer
       {
          pendingSync = true;
 
-         // if (System.nanoTime() - lastFlushTime.get() > timeout)
-         // {
-         // // This might happen if there is low activity in the buffer - the timer hasn't fired because no sync records
-         // // have been recently added, and suddenly a sync record is added
-         // // In this case we do a flush immediately, which can reduce latency in this case
-         //
-         // flush();
-         // }
-
-         if (!spinning)
-         {
-            spinLimiter.release();
-
-            spinning = true;
-         }
+         startSpin();
       }
 
    }
@@ -293,10 +294,10 @@ public class TimedBuffer
       flush(false);
    }
 
-   /** 
+   /**
     * force means the Journal is moving to a new file. Any pending write need to be done immediately
     * or data could be lost
-    * */
+    */
    public void flush(final boolean force)
    {
       synchronized (this)
@@ -323,28 +324,9 @@ public class TimedBuffer
 
             bufferToFlush.put(buffer.toByteBuffer().array(), 0, pos);
 
-            if (bufferToFlush != null)
-            {
-               bufferObserver.flushBuffer(bufferToFlush, pendingSync, callbacks);
-            }
+            bufferObserver.flushBuffer(bufferToFlush, pendingSync, callbacks);
 
-            if (spinning)
-            {
-               try
-               {
-                  // We acquire the spinLimiter semaphore - this prevents the timer flush thread unnecessarily spinning
-                  // when the buffer is inactive
-                  spinLimiter.acquire();
-               }
-               catch (InterruptedException e)
-               {
-                  // Ignore
-               }
-
-               spinning = false;
-            }
-
-            lastFlushTime.set(System.nanoTime());
+            stopSpin();
 
             pendingSync = false;
 
@@ -368,7 +350,7 @@ public class TimedBuffer
 
    // Inner classes -------------------------------------------------
 
-   private class LogRatesTimerTask extends TimerTask
+   protected class LogRatesTimerTask extends TimerTask
    {
       private boolean closed;
 
@@ -416,22 +398,48 @@ public class TimedBuffer
       }
    }
 
-   private class CheckTimer implements Runnable
+   protected class CheckTimer implements Runnable
    {
       private volatile boolean closed = false;
 
+      int checks = 0;
+      int failedChecks = 0;
+      long timeBefore = 0;
+
+      final int sleepMillis = timeout / 1000000; // truncates
+      final int sleepNanos = timeout % 1000000;
+
+
       public void run()
       {
+         long lastFlushTime = 0;
+
          while (!closed)
          {
-            // We flush on the timer if there are pending syncs there and we've waited waited at least one
-            // timeout since the time of the last flush
+            // We flush on the timer if there are pending syncs there and we've waited at least one
+            // timeout since the time of the last flush.
             // Effectively flushing "resets" the timer
+            // On the timeout verification, notice that we ignore the timeout check if we are using sleep
 
-            if (pendingSync && bufferObserver != null && System.nanoTime() > lastFlushTime.get() + timeout)
+            if (pendingSync)
             {
-               flush();
+               if (isUseSleep())
+               {
+                  // if using sleep, we will always flush
+                  flush();
+               lastFlushTime = System.nanoTime();
+               }
+               else
+               if (bufferObserver != null && System.nanoTime() > lastFlushTime + timeout)
+               {
+                  // if not using flush we will spin and do the time checks manually
+                  flush();
+                  lastFlushTime = System.nanoTime();
+               }
+
             }
+
+            sleepIfPossible();
 
             try
             {
@@ -441,8 +449,60 @@ public class TimedBuffer
 
                spinLimiter.release();
             }
-            catch (InterruptedException ignore)
+            catch (InterruptedException e)
             {
+               // throw new HornetQInterruptedException(e);
+            }
+         }
+      }
+
+      /**
+       * We will attempt to use sleep only if the system supports nano-sleep
+       * we will on that case verify up to MAX_CHECKS if nano sleep is behaving well.
+       * if more than 50% of the checks have failed we will cancel the sleep and just use regular spin
+       */
+      private void sleepIfPossible()
+      {
+         if (isUseSleep())
+         {
+            if (checks < MAX_CHECKS_ON_SLEEP)
+            {
+               timeBefore = System.nanoTime();
+            }
+
+            try
+            {
+               sleep(sleepMillis, sleepNanos);
+            }
+            catch (InterruptedException e)
+            {
+               // throw new HornetQInterruptedException(e);
+            }
+            catch (Exception e)
+            {
+               setUseSleep(false);
+               TimedBuffer.log.warn(e.getMessage() + ", disabling sleep on TimedBuffer, using spin now", e);
+            }
+
+            if (checks < MAX_CHECKS_ON_SLEEP)
+            {
+               long realTimeSleep = System.nanoTime() - timeBefore;
+
+               // I'm letting the real time to be up to 50% than the requested sleep.
+               if (realTimeSleep > timeout * 1.5)
+               {
+                  failedChecks++;
+               }
+
+               if (++checks >= MAX_CHECKS_ON_SLEEP)
+               {
+                  if (failedChecks > MAX_CHECKS_ON_SLEEP * 0.5)
+                  {
+                     TimedBuffer.log.info("Thread.sleep with nano seconds is not working as expected, " +
+                           "Your kernel possibly doesn't support real time. the Journal TimedBuffer will spin for timeouts");
+                     setUseSleep(false);
+                  }
+               }
             }
          }
       }
@@ -452,5 +512,54 @@ public class TimedBuffer
          closed = true;
       }
    }
+
+   /**
+    * Sub classes (tests basically) can use this to override how the sleep is being done
+    *
+    * @param sleepMillis
+    * @param sleepNanos
+    * @throws InterruptedException
+    */
+   protected void sleep(int sleepMillis, int sleepNanos) throws InterruptedException
+   {
+      Thread.sleep(sleepMillis, sleepNanos);
+   }
+
+   /**
+    * Sub classes (tests basically) can use this to override disabling spinning
+    */
+   protected void stopSpin()
+   {
+      if (spinning)
+      {
+         try
+         {
+            // We acquire the spinLimiter semaphore - this prevents the timer flush thread unnecessarily spinning
+            // when the buffer is inactive
+            spinLimiter.acquire();
+         }
+         catch (InterruptedException e)
+         {
+            // throw new HornetQInterruptedException(e);
+         }
+
+         spinning = false;
+      }
+   }
+
+
+   /**
+    * Sub classes (tests basically) can use this to override disabling spinning
+    */
+   protected void startSpin()
+   {
+      if (!spinning)
+      {
+         spinLimiter.release();
+
+         spinning = true;
+      }
+   }
+
 
 }
