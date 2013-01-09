@@ -109,6 +109,8 @@ public class IncomingTweetsHandler implements ConnectorService
 
       // getting latest ID
       this.paging.setCount(TwitterConstants.FIRST_ATTEMPT_PAGE_SIZE);
+
+      // If I used annotations here, it won't compile under JDK 1.7
       ResponseList res = this.twitter.getHomeTimeline(paging);
       this.paging.setSinceId(((Status) res.get(0)).getId());
       log.debug(connectorName + " initialise(): got latest ID: " + this.paging.getSinceId());
@@ -142,6 +144,7 @@ public class IncomingTweetsHandler implements ConnectorService
    private void poll() throws Exception
    {
       // get new tweets
+      // If I used annotations here, it won't compile under JDK 1.7
       ResponseList res = this.twitter.getHomeTimeline(paging);
 
       if (res == null || res.size() == 0)
