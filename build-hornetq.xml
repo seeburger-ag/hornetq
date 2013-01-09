@@ -39,6 +39,7 @@
    <!-- ======================================================================================== -->
 
    <property name="module.name" value="hornetq"/>
+   <property name="hornetq.version.snapshot.suffix" value=""/>
       <!-- Version properties are read from hornetq-version.properties instead of duplicating them here -->
    <property file="src/config/common/hornetq-version.properties"/>
    <property name="hornetq.version.revision" value="0" />
