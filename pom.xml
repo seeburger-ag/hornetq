@@ -11,15 +11,13 @@ Copyright 2009 Red Hat, Inc.
  implied.  See the License for the specific language governing
  permissions and limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
    <modelVersion>4.0.0</modelVersion>
    <groupId>com.seeburger.as</groupId>
    <artifactId>messaging</artifactId>
    <packaging>pom</packaging>
-   <version>2.2.13.SEE1-SNAPSHOT</version>
+   <version>2.2.13.SEE1</version>
 
     <properties>
         <resteasy.version>2.1.0.GA</resteasy.version>
@@ -87,7 +85,7 @@ Copyright 2009 Red Hat, Inc.
                   <id>clean</id>
                   <phase>pre-clean</phase>
                   <configuration>
-                     <tasks name="distro"/>
+                     <tasks name="distro" />
                   </configuration>
                   <goals>
                      <goal>run</goal>
@@ -98,8 +96,8 @@ Copyright 2009 Red Hat, Inc.
                   <phase>package</phase>
                   <configuration>
                      <tasks>
-                        <property name="maven.build"  value="true"/>
-                        <ant target="distro"/>
+                        <property name="maven.build" value="true" />
+                        <ant target="distro" />
                      </tasks>
                   </configuration>
                   <goals>
