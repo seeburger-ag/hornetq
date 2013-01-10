@@ -198,6 +198,8 @@
       <exec executable="${maven.executable}">
          <arg value="deploy:deploy-file"/>
           <arg value="-e"/>
+         <arg value="-s"/>
+         <arg value="${user.home}/.m2/settings-jboss.xml"/>
          <arg value="-DgroupId=com.seeburger.as"/>
          <arg value="-DartifactId=${artifact.id}"/>
          <arg value="-Dversion=${hornetq.version}"/>
@@ -211,7 +213,9 @@
        <echo level="info">Uploading file=${jars.dir}/${artifact.id}-sources.${artifact.type}</echo>
       <exec executable="${maven.executable}">
          <arg value="deploy:deploy-file"/>
-          <arg value="-e"/>
+         <arg value="-e"/>
+         <arg value="-s"/>
+         <arg value="${user.home}/.m2/settings-jboss.xml"/>
          <arg value="-DgroupId=com.seeburger.as"/>
          <arg value="-DartifactId=${artifact.id}"/>
          <arg value="-Dversion=${hornetq.version}"/>
@@ -319,6 +323,8 @@
     <!-- deploy the jar -->
     <exec executable="${maven.executable}">
      <arg value="-e"/>
+     <arg value="-s"/>
+     <arg value="${user.home}/.m2/settings-jboss.xml"/>
      <arg value="deploy:deploy-file"/>
      <arg value="-DpomFile=${temporary.pom}"/>
      <arg value="-DgroupId=com.seeburger.as"/>
@@ -333,6 +339,8 @@
     <echo level="info">Deploying file=./build/jars/${file-name}-sources.jar</echo>
     <exec executable="${maven.executable}">
      <arg value="-e"/>
+     <arg value="-s"/>
+     <arg value="${user.home}/.m2/settings-jboss.xml"/>
      <arg value="deploy:deploy-file"/>
      <arg value="-DpomFile=${temporary.pom}"/>
      <arg value="-DgroupId=com.seeburger.as"/>
