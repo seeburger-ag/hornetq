@@ -168,8 +168,12 @@
 
    <target name="upload-local-target">
        <!-- install the jar -->
+       <echo level="info">Installing file=./jars/${file-name}.jar</echo>
        <exec executable="${maven.executable}" dir="./build">
         <arg value="install:install-file"/>
+        <arg value="-e"/>
+        <arg value="-s"/>
+        <arg value="${user.home}/.m2/settings-jboss.xml"/>
         <!-- uncomment the following line to deploy to the JBoss 5 repository -->
         <!-- <arg value="-Dmaven.repo.local=/work/eap-51/maven-repository"/> -->
         <arg value="-DgroupId=com.seeburger.as"/>
@@ -179,8 +183,12 @@
         <arg value="-Dfile=./jars/${file-name}.jar"/>
        </exec>
        <!-- install the sources jar -->
+       <echo level="info">Installing file=./jars/${file-name}-sources.jar</echo>
        <exec executable="${maven.executable}" dir="./build">
         <arg value="install:install-file"/>
+        <arg value="-e"/>
+        <arg value="-s"/>
+        <arg value="${user.home}/.m2/settings-jboss.xml"/>
         <arg value="-DgroupId=com.seeburger.as"/>
         <!-- uncomment the following line to deploy to the JBoss 5 repository -->
         <!-- arg value="-Dmaven.repo.local=/work/eap/maven-repository"/ -->
@@ -197,7 +205,7 @@
        <echo level="info">Uploading file=${jars.dir}/${artifact.id}.${artifact.type}</echo>
       <exec executable="${maven.executable}">
          <arg value="deploy:deploy-file"/>
-          <arg value="-e"/>
+         <arg value="-e"/>
          <arg value="-s"/>
          <arg value="${user.home}/.m2/settings-jboss.xml"/>
          <arg value="-DgroupId=com.seeburger.as"/>
