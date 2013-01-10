@@ -18,6 +18,9 @@
    <property name="build.dir" value="build"/>
    <property name="jars.dir" value="${build.dir}/jars"/>
 
+    <property name="jboss.snapshots.repo.url" value="dav:https://snapshots.jboss.org/maven2" />
+    <property name="jboss.releases.repo.url" value="https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/" />
+
    <condition property="maven.executable" value="mvn.bat" else="mvn">
       <os family="windows"/>
    </condition>
@@ -191,6 +194,7 @@
 
    <target name="upload">
       <!-- upload the jar -->
+       <echo level="info">Uploading file=${jars.dir}/${artifact.id}.${artifact.type}</echo>
       <exec executable="${maven.executable}">
          <arg value="deploy:deploy-file"/>
           <arg value="-e"/>
@@ -200,10 +204,11 @@
          <arg value="-Dpackaging=${artifact.type}"/>
          <arg value="-DgeneratePom=true"/>
          <arg value="-Dfile=${jars.dir}/${artifact.id}.${artifact.type}"/>
-         <arg value="-DrepositoryId=snapshots.jboss.org"/>
-         <arg value="-Durl=dav:https://snapshots.jboss.org/maven2"/>
+         <arg value="-DrepositoryId=snapshot"/>
+         <arg value="-Durl=${jboss.snapshots.repo.url}"/>
       </exec>
       <!-- upload the corresponding sources jar -->
+       <echo level="info">Uploading file=${jars.dir}/${artifact.id}-sources.${artifact.type}</echo>
       <exec executable="${maven.executable}">
          <arg value="deploy:deploy-file"/>
           <arg value="-e"/>
@@ -214,8 +219,8 @@
          <arg value="-DgeneratePom=true"/>
          <arg value="-Dclassifier=sources"/>
          <arg value="-Dfile=${jars.dir}/${artifact.id}-sources.${artifact.type}"/>
-         <arg value="-DrepositoryId=snapshots.jboss.org"/>
-         <arg value="-Durl=dav:https://snapshots.jboss.org/maven2"/>
+         <arg value="-DrepositoryId=snapshot"/>
+         <arg value="-Durl=${jboss.snapshots.repo.url}"/>
       </exec>
    </target>
 
@@ -279,7 +284,7 @@
       <echo file="${temporary.pom}"
             message="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;project&gt;${line.separator}
  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;${line.separator}
- &lt;groupId&gt;org.hornetq&lt;/groupId&gt;${line.separator}
+ &lt;groupId&gt;com.seeburger.as&lt;/groupId&gt;${line.separator}
  &lt;artifactId&gt;${artifact.id}&lt;/artifactId&gt;${line.separator}
  &lt;version&gt;${hornetq.version}&lt;/version&gt;${line.separator}
   &lt;name&gt;HornetQ&lt;/name&gt;${line.separator}
@@ -304,12 +309,13 @@
       &lt;/developer&gt;${line.separator}
    &lt;/developers&gt;${line.separator}
    &lt;scm&gt;${line.separator}
-      &lt;connection&gt;scm:svn:http://anonsvn.jboss.org/repos/hornetq/trunk&lt;/connection&gt;${line.separator}
-      &lt;developerConnection&gt;scm:svn:https://svn.jboss.org/repos/hornetq/trunk&lt;/developerConnection&gt;${line.separator}
-      &lt;url&gt;http://fisheye.jboss.org/browse/hornetq&lt;/url&gt;${line.separator}
+      &lt;connection&gt;scm:git:git@github.com:seeburger-ag/hornetq.git&lt;/connection&gt;${line.separator}
+      &lt;developerConnection&gt;scm:git:git@github.com:seeburger-ag/hornetq.git&lt;/developerConnection&gt;${line.separator}
+      &lt;url&gt;https://github.com/seeburger-ag/hornetq&lt;/url&gt;${line.separator}
    &lt;/scm&gt;${line.separator}
  &lt;/project&gt;"/>
 
+    <echo level="info">Deploying file=./build/jars/${file-name}.jar</echo>
     <!-- deploy the jar -->
     <exec executable="${maven.executable}">
      <arg value="-e"/>
@@ -320,10 +326,11 @@
      <arg value="-Dversion=${hornetq.version}"/>
      <arg value="-Dpackaging=jar"/>
      <arg value="-Dfile=./build/jars/${file-name}.jar"/>
-     <arg value="-DrepositoryId=jboss-releases-repository"/>
-     <arg value="-Durl=https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/"/>
+     <arg value="-DrepositoryId=release"/>
+     <arg value="-Durl=${jboss.releases.repo.url}"/>
     </exec>
     <!-- deploy the sources jar -->
+    <echo level="info">Deploying file=./build/jars/${file-name}-sources.jar</echo>
     <exec executable="${maven.executable}">
      <arg value="-e"/>
      <arg value="deploy:deploy-file"/>
@@ -334,8 +341,8 @@
      <arg value="-Dpackaging=jar"/>
      <arg value="-Dclassifier=sources"/>
      <arg value="-Dfile=./build/jars/${file-name}-sources.jar"/>
-     <arg value="-DrepositoryId=jboss-releases-repository"/>
-     <arg value="-Durl=https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/"/>
+     <arg value="-DrepositoryId=release"/>
+     <arg value="-Durl=${jboss.releases.repo.url}"/>
     </exec>
 
     <delete file="${temporary.pom}"/>
