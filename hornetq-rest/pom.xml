@@ -10,7 +10,8 @@
 
     <properties>
         <resteasy.version>2.0.1.GA</resteasy.version>
-        <hornetq.version>2.2.13.SEE1-SNAPSHOT</hornetq.version>
+        <hornetq.version.snapshot.suffix></hornetq.version.snapshot.suffix>
+        <hornetq.version>2.2.13.SEE1${hornetq.version.snapshot.suffix}</hornetq.version>
     </properties>
 
     <licenses>
@@ -23,9 +24,9 @@
 
     <distributionManagement>
         <repository>
-            <id>jboss-releases-repository</id>
-            <name>JBoss Releases Repository</name>
-            <url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</url>
+            <id>release</id>
+            <name>SEE Release Repository</name>
+            <url>https://repo.seeburger.de/archiva/repository/release/</url>
         </repository>
     </distributionManagement>
 
