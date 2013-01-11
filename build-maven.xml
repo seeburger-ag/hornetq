@@ -172,8 +172,6 @@
        <exec executable="${maven.executable}" dir="./build">
         <arg value="install:install-file"/>
         <arg value="-e"/>
-        <arg value="-s"/>
-        <arg value="${user.home}/.m2/settings-jboss.xml"/>
         <!-- uncomment the following line to deploy to the JBoss 5 repository -->
         <!-- <arg value="-Dmaven.repo.local=/work/eap-51/maven-repository"/> -->
         <arg value="-DgroupId=com.seeburger.as"/>
@@ -187,8 +185,6 @@
        <exec executable="${maven.executable}" dir="./build">
         <arg value="install:install-file"/>
         <arg value="-e"/>
-        <arg value="-s"/>
-        <arg value="${user.home}/.m2/settings-jboss.xml"/>
         <arg value="-DgroupId=com.seeburger.as"/>
         <!-- uncomment the following line to deploy to the JBoss 5 repository -->
         <!-- arg value="-Dmaven.repo.local=/work/eap/maven-repository"/ -->
