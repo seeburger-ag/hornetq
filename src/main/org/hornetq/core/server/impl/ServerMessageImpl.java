@@ -28,9 +28,9 @@ import org.hornetq.utils.MemorySize;
 import org.hornetq.utils.TypedProperties;
 
 /**
- * 
+ *
  * A ServerMessageImpl
- * 
+ *
  * @author <a href="mailto:tim.fox@jboss.com">Tim Fox</a>
  * @author <a href="mailto:ataylor@redhat.com">Andy Taylor</a>
  * @author <a href="mailto:clebert.suconic@jboss.com">Clebert Suconic</a>
@@ -115,12 +115,12 @@ public class ServerMessageImpl extends MessageImpl implements ServerMessage
       return ref;
    }
 
-   
+
    public boolean hasInternalProperties()
    {
       return properties.hasInternalProperties();
    }
-   
+
    public synchronized int incrementRefCount() throws Exception
    {
       refCount++;
@@ -283,8 +283,8 @@ public class ServerMessageImpl extends MessageImpl implements ServerMessage
    @Override
    public String toString()
    {
-      return "ServerMessage[messageID=" + messageID + ",priority=" + this.getPriority() + ", bodySize=" + this.getBodyBuffer().capacity() +
-          ",expiration=" + (this.getExpiration() != 0 ? new java.util.Date(this.getExpiration()) : 0) + 
+      return "ServerMessage[messageID=" + messageID + ",userID=" + getUserID() + ",priority=" + this.getPriority() + ", bodySize=" + this.getBodyBuffer().capacity() +
+          ",expiration=" + (this.getExpiration() != 0 ? new java.util.Date(this.getExpiration()) : 0) +
           ", durable=" + durable + ", address=" + getAddress()  + ",properties=" + properties.toString() + "]@" + System.identityHashCode(this);
    }
 
@@ -328,7 +328,7 @@ public class ServerMessageImpl extends MessageImpl implements ServerMessage
          }
       }
    }
-   
+
    public Object getDuplicateProperty()
    {
       return getObjectProperty(Message.HDR_DUPLICATE_DETECTION_ID);
