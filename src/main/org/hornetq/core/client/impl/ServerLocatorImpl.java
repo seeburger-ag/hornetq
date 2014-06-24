@@ -762,12 +762,14 @@ public class ServerLocatorImpl implements ServerLocatorInternal, DiscoveryListen
                   if (topologyArray != null && attempts == topologyArray.length)
                   {
                      throw new HornetQException(HornetQException.NOT_CONNECTED,
-                                                "Cannot connect to server(s). Tried with all available servers.");
+                                                "Cannot connect to server(s) in topology. Tried with all " + attempts +
+                                                " available servers.", e);
                   }
                   if (topologyArray == null && initialConnectors != null && attempts == initialConnectors.length)
                   {
                      throw new HornetQException(HornetQException.NOT_CONNECTED,
-                                                "Cannot connect to server(s). Tried with all available servers.");
+                                                "Cannot connect to server(s). Tried with all " + attempts +
+                                                " available servers.", e);
                   }
                   retry = true;
                }
@@ -1477,7 +1479,7 @@ public class ServerLocatorImpl implements ServerLocatorInternal, DiscoveryListen
    {
       List<DiscoveryEntry> newConnectors = discoveryGroup.getDiscoveryEntries();
 
-      
+
       TransportConfiguration[] newInitialconnectors = (TransportConfiguration[])Array.newInstance(TransportConfiguration.class,
                                                                            newConnectors.size());
 
@@ -1493,14 +1495,14 @@ public class ServerLocatorImpl implements ServerLocatorInternal, DiscoveryListen
             topology.updateMember(0, entry.getNodeID(), member);
          }
       }
-      
+
       this.initialConnectors = newInitialconnectors;
 
       if (clusterConnection && !receivedTopology && initialConnectors.length > 0)
       {
          // The node is alone in the cluster. We create a connection to the new node
          // to trigger the node notification to form the cluster.
-         
+
          Runnable connectRunnable = new Runnable()
          {
             public void run()
@@ -1531,13 +1533,13 @@ public class ServerLocatorImpl implements ServerLocatorInternal, DiscoveryListen
       synchronized (factories)
       {
          factories.remove(factory);
-   
+
          if (!clusterConnection && factories.isEmpty())
          {
             // Go back to using the broadcast or static list
-   
+
             receivedTopology = false;
-   
+
             topologyArray = null;
          }
       }
