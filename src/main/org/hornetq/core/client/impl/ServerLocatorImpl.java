@@ -1822,7 +1822,7 @@ public class ServerLocatorImpl implements ServerLocatorInternal, DiscoveryListen
    {
       if (state != null && state != STATE.INITIALIZED)
       {
-         throw new IllegalStateException("Cannot create session factory, server locator is closed (maybe it has been garbage collected)");
+         throw new IllegalStateException("Cannot create session factory, server locator is closed (maybe it has been garbage collected). State=" + state);
       }
    }
 
