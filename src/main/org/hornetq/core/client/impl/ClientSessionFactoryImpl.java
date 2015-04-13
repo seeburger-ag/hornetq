@@ -774,10 +774,10 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
                                                          serverLocator.getConfirmationWindowSize(),
                                                          null);
 
-               Packet pResponse;
+               CreateSessionResponseMessage response;
                try
                {
-                  pResponse = channel1.sendBlocking(request);
+                  response = (CreateSessionResponseMessage) channel1.sendBlocking(request, PacketImpl.CREATESESSION_RESP);
                }
                catch (HornetQException e)
                {
@@ -800,8 +800,6 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
                      throw e;
                   }
                }
-
-               CreateSessionResponseMessage response = (CreateSessionResponseMessage)pResponse;
 
                Channel sessionChannel = connection.getChannel(sessionChannelID,
                                                               serverLocator.getConfirmationWindowSize());
@@ -976,7 +974,7 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
                                             " multiplier = " +
                                             retryIntervalMultiplier, new Exception("trace"));
       }
-      
+
       long interval = retryInterval;
 
       int count = 0;
@@ -1052,7 +1050,7 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
             {
                if (log.isDebugEnabled())
                {
-            	   log.debug("Reconnection successfull");
+                  log.debug("Reconnection successfull");
                }
                return;
             }
@@ -1631,7 +1629,7 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
       }
 
       /**
-       * 
+       *
        */
       public void send()
       {

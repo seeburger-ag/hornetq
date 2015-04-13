@@ -129,7 +129,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
    private final boolean xa;
 
    private final Executor executor;
-   
+
    // to be sent to consumers as consumers will need a separate consumer for flow control
    private final Executor flowControlExecutor;
 
@@ -141,7 +141,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
    private final Map<Long, ClientConsumerInternal> consumers = new LinkedHashMap<Long, ClientConsumerInternal>();
 
    private volatile boolean closed;
-   
+
    private volatile boolean closing;
 
    private final boolean autoCommitAcks;
@@ -245,7 +245,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
       this.remotingConnection = remotingConnection;
 
       this.executor = executor;
-      
+
       this.flowControlExecutor = flowControlExecutor;
 
       this.xa = xa;
@@ -293,7 +293,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
    // ClientSession implementation
    // -----------------------------------------------------------------
-   
+
    public Channel getChannel()
    {
       return channel;
@@ -365,7 +365,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
    {
       checkClosed();
 
-      channel.sendBlocking(new SessionDeleteQueueMessage(queueName));
+      channel.sendBlocking(new SessionDeleteQueueMessage(queueName), PacketImpl.NULL_RESPONSE);
    }
 
    public void deleteQueue(final String queueName) throws HornetQException
@@ -379,7 +379,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
       SessionQueueQueryMessage request = new SessionQueueQueryMessage(queueName);
 
-      SessionQueueQueryResponseMessage response = (SessionQueueQueryResponseMessage)channel.sendBlocking(request);
+      SessionQueueQueryResponseMessage response = (SessionQueueQueryResponseMessage)channel.sendBlocking(request, PacketImpl.SESS_QUEUEQUERY_RESP);
 
       return new QueueQueryImpl(response.isDurable(),
                                 response.getConsumerCount(),
@@ -395,7 +395,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
       SessionBindingQueryMessage request = new SessionBindingQueryMessage(address);
 
-      SessionBindingQueryResponseMessage response = (SessionBindingQueryResponseMessage)channel.sendBlocking(request);
+      SessionBindingQueryResponseMessage response = (SessionBindingQueryResponseMessage)channel.sendBlocking(request, PacketImpl.SESS_BINDINGQUERY_RESP);
 
       return new BindingQueryImpl(response.isExists(), response.getQueueNames());
    }
@@ -537,7 +537,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
       {
          log.trace("Sending commit");
       }
-      
+
       if (rollbackOnly)
       {
          rollbackOnFailover();
@@ -547,7 +547,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
       try
       {
-         channel.sendBlocking(new PacketImpl(PacketImpl.SESS_COMMIT));
+         channel.sendBlocking(new PacketImpl(PacketImpl.SESS_COMMIT), PacketImpl.NULL_RESPONSE);
       }
       catch (HornetQException e)
       {
@@ -593,7 +593,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
          stop();
       }
 
-      
+
       // We need to make sure we don't get any inflight messages
       for (ClientConsumerInternal consumer : cloneConsumers())
       {
@@ -603,7 +603,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
       // Acks must be flushed here *after connection is stopped and all onmessages finished executing
       flushAcks();
 
-      channel.sendBlocking(new RollbackMessage(isLastMessageAsDelivered));
+      channel.sendBlocking(new RollbackMessage(isLastMessageAsDelivered), PacketImpl.NULL_RESPONSE);
 
       if (wasStarted)
       {
@@ -699,7 +699,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
             clientConsumerInternal.stop(waitForOnMessage);
          }
 
-         channel.sendBlocking(new PacketImpl(PacketImpl.SESS_STOP));
+         channel.sendBlocking(new PacketImpl(PacketImpl.SESS_STOP), PacketImpl.NULL_RESPONSE);
 
          started = false;
       }
@@ -764,7 +764,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
       if (blockOnAcknowledge)
       {
-         channel.sendBlocking(message);
+         channel.sendBlocking(message, PacketImpl.NULL_RESPONSE);
       }
       else
       {
@@ -788,7 +788,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
       if (blockOnAcknowledge)
       {
-         channel.sendBlocking(message);
+         channel.sendBlocking(message, PacketImpl.NULL_RESPONSE);
       }
       else
       {
@@ -884,7 +884,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
          log.debug("Session was already closed, giving up now, this=" + this);
          return;
       }
-      
+
       if (log.isDebugEnabled())
       {
          log.debug("Calling close on session "  + this);
@@ -903,7 +903,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
          inClose = true;
 
-         channel.sendBlocking(new SessionCloseMessage());
+         channel.sendBlocking(new SessionCloseMessage(), PacketImpl.NULL_RESPONSE);
       }
       catch (Throwable e)
       {
@@ -972,7 +972,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
             Channel channel1 = backupConnection.getChannel(1, -1);
 
-            ReattachSessionResponseMessage response = (ReattachSessionResponseMessage)channel1.sendBlocking(request);
+            ReattachSessionResponseMessage response = (ReattachSessionResponseMessage)channel1.sendBlocking(request, PacketImpl.REATTACH_SESSION_RESP);
 
             if (response.isReattached())
             {
@@ -1023,7 +1023,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
                   {
                      try
                      {
-                        channel1.sendBlocking(createRequest);
+                        channel1.sendBlocking(createRequest, PacketImpl.CREATESESSION_RESP);
                         retry = false;
                      }
                      catch (HornetQException e)
@@ -1147,12 +1147,12 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
       }
 
       HashMap<String, String> metaDataToSend;
-      
+
       synchronized (metadata)
       {
          metaDataToSend = new HashMap<String, String>(metadata);
       }
-      
+
       // Resetting the metadata after failover
       for (Map.Entry<String, String> entries : metaDataToSend.entrySet())
       {
@@ -1166,7 +1166,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
       {
          metadata.put(key, data);
       }
-      channel.sendBlocking(new SessionAddMetaDataMessage(key, data));
+      channel.sendBlocking(new SessionAddMetaDataMessage(key, data), PacketImpl.NULL_RESPONSE);
    }
 
    public void addMetaData(String key, String data) throws HornetQException
@@ -1175,12 +1175,12 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
       {
          metadata.put(key, data);
       }
-      channel.sendBlocking(new SessionAddMetaDataMessageV2(key, data));
+      channel.sendBlocking(new SessionAddMetaDataMessageV2(key, data), PacketImpl.NULL_RESPONSE);
    }
-   
+
    public void addUniqueMetaData(String key, String data) throws HornetQException
    {
-      channel.sendBlocking(new SessionUniqueAddMetaDataMessage(key, data));
+      channel.sendBlocking(new SessionUniqueAddMetaDataMessage(key, data), PacketImpl.NULL_RESPONSE);
    }
 
    public ClientSessionFactoryInternal getSessionFactory()
@@ -1281,7 +1281,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
             sendAckHandler.sendAcknowledged(scm.getMessage());
          }
       }
-      
+
    }
 
    // XAResource implementation
@@ -1304,7 +1304,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
       try
       {
-         SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet);
+         SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet, PacketImpl.SESS_XA_RESP);
 
          workDone = false;
 
@@ -1362,7 +1362,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
          flushAcks();
 
-         SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet);
+         SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet, PacketImpl.SESS_XA_RESP);
 
          if (response.isError())
          {
@@ -1382,7 +1382,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
       checkXA();
       try
       {
-         SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(new SessionXAForgetMessage(xid));
+         SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(new SessionXAForgetMessage(xid), PacketImpl.SESS_XA_RESP);
 
          if (response.isError())
          {
@@ -1402,7 +1402,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
       try
       {
-         SessionXAGetTimeoutResponseMessage response = (SessionXAGetTimeoutResponseMessage)channel.sendBlocking(new PacketImpl(PacketImpl.SESS_XA_GET_TIMEOUT));
+         SessionXAGetTimeoutResponseMessage response = (SessionXAGetTimeoutResponseMessage)channel.sendBlocking(new PacketImpl(PacketImpl.SESS_XA_GET_TIMEOUT), PacketImpl.SESS_XA_GET_TIMEOUT_RESP);
 
          return response.getTimeoutSeconds();
       }
@@ -1448,7 +1448,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
       try
       {
-         SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet);
+         SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet, PacketImpl.SESS_XA_RESP);
 
          if (response.isError())
          {
@@ -1468,7 +1468,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
             try
             {
                log.warn("failover occurred during prepare re-trying");
-               SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet);
+               SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet, PacketImpl.SESS_XA_RESP);
 
                if (response.isError())
                {
@@ -1514,7 +1514,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
       {
          try
          {
-            SessionXAGetInDoubtXidsResponseMessage response = (SessionXAGetInDoubtXidsResponseMessage)channel.sendBlocking(new PacketImpl(PacketImpl.SESS_XA_INDOUBT_XIDS));
+            SessionXAGetInDoubtXidsResponseMessage response = (SessionXAGetInDoubtXidsResponseMessage)channel.sendBlocking(new PacketImpl(PacketImpl.SESS_XA_INDOUBT_XIDS), PacketImpl.SESS_XA_INDOUBT_XIDS_RESP);
 
             List<Xid> xids = response.getXids();
 
@@ -1557,7 +1557,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
          SessionXARollbackMessage packet = new SessionXARollbackMessage(xid);
 
-         SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet);
+         SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet, PacketImpl.SESS_XA_RESP);
 
          if (wasStarted)
          {
@@ -1595,7 +1595,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
       try
       {
-         SessionXASetTimeoutResponseMessage response = (SessionXASetTimeoutResponseMessage)channel.sendBlocking(new SessionXASetTimeoutMessage(seconds));
+         SessionXASetTimeoutResponseMessage response = (SessionXASetTimeoutResponseMessage)channel.sendBlocking(new SessionXASetTimeoutMessage(seconds), PacketImpl.SESS_XA_SET_TIMEOUT_RESP);
 
          return response.isOK();
       }
@@ -1632,7 +1632,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
             throw new XAException(XAException.XAER_INVAL);
          }
 
-         SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet);
+         SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet, PacketImpl.SESS_XA_RESP);
 
          if (response.isError())
          {
@@ -1649,7 +1649,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
          {
             try
             {
-               SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet);
+               SessionXAResponseMessage response = (SessionXAResponseMessage)channel.sendBlocking(packet, PacketImpl.SESS_XA_RESP);
 
                if (response.isError())
                {
@@ -1665,7 +1665,10 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
                throw new XAException(XAException.XAER_RMERR);
             }
          }
+
+         log.error(e.getMessage(), e);
          // This should never occur
+         // Oh, really - then why the extra logging?
          throw new XAException(XAException.XAER_RMERR);
       }
    }
@@ -1696,7 +1699,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
    {
       return remotingConnection;
    }
-   
+
    /* (non-Javadoc)
     * @see java.lang.Object#toString()
     */
@@ -1789,7 +1792,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
                                                                               browseOnly,
                                                                               true);
 
-      SessionQueueQueryResponseMessage queueInfo = (SessionQueueQueryResponseMessage)channel.sendBlocking(request);
+      SessionQueueQueryResponseMessage queueInfo = (SessionQueueQueryResponseMessage)channel.sendBlocking(request, PacketImpl.SESS_QUEUEQUERY_RESP);
 
       // The actual windows size that gets used is determined by the user since
       // could be overridden on the queue settings
@@ -1862,7 +1865,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
 
       CreateQueueMessage request = new CreateQueueMessage(address, queueName, filterString, durable, temp, true);
 
-      channel.sendBlocking(request);
+      channel.sendBlocking(request, PacketImpl.NULL_RESPONSE);
    }
 
    private void checkXA() throws XAException
@@ -1881,7 +1884,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
          throw new HornetQException(HornetQException.OBJECT_CLOSED, "Session is closed");
       }
    }
-   
+
    private ClassLoader lookupTCCL()
    {
       return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>()
@@ -1893,7 +1896,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
       });
 
    }
-   
+
    /**
     * @param consumerID
     * @return
@@ -1913,7 +1916,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
       {
          remotingConnection.removeFailureListener(this);
       }
-      
+
       if (log.isDebugEnabled())
       {
          log.debug("calling cleanup on " + this);
@@ -1924,7 +1927,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
          closed = true;
 
          channel.close();
-         
+
          // if the server is sending a disconnect
          // any pending blocked operation could hang without this
          channel.returnBlocking();
@@ -1956,7 +1959,7 @@ public class ClientSessionImpl implements ClientSessionInternal, FailureListener
    private Set<ClientProducerInternal> cloneProducers()
    {
       Set<ClientProducerInternal> producersClone;
-      
+
       synchronized (producers)
       {
          producersClone = new HashSet<ClientProducerInternal>(producers);

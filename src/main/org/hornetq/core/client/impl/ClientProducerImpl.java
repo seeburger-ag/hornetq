@@ -26,6 +26,7 @@ import org.hornetq.core.logging.Logger;
 import org.hornetq.core.message.BodyEncoder;
 import org.hornetq.core.message.impl.MessageInternal;
 import org.hornetq.core.protocol.core.Channel;
+import org.hornetq.core.protocol.core.impl.PacketImpl;
 import org.hornetq.core.protocol.core.impl.wireformat.SessionSendContinuationMessage;
 import org.hornetq.core.protocol.core.impl.wireformat.SessionSendLargeMessage;
 import org.hornetq.core.protocol.core.impl.wireformat.SessionSendMessage;
@@ -36,7 +37,7 @@ import org.hornetq.utils.UUIDGenerator;
 
 /**
  * The client-side Producer connectionFactory class.
- * 
+ *
  * @author <a href="mailto:tim.fox@jboss.com">Tim Fox</a>
  * @author <a href="mailto:clebert.suconic@jboss.org">Clebert Suconic</a>
  * @author <a href="mailto:ataylor@redhat.com">Andy Taylor</a>
@@ -284,7 +285,7 @@ public class ClientProducerImpl implements ClientProducerInternal
 
          if (sendBlocking)
          {
-            channel.sendBlocking(packet);
+            channel.sendBlocking(packet, PacketImpl.NULL_RESPONSE);
          }
          else
          {
@@ -409,7 +410,7 @@ public class ClientProducerImpl implements ClientProducerInternal
 
             lastChunk = pos >= bodySize;
 
-            final SessionSendContinuationMessage chunk = new SessionSendContinuationMessage(msgI, 
+            final SessionSendContinuationMessage chunk = new SessionSendContinuationMessage(msgI,
                                                                                             bodyBuffer.toByteBuffer()
                                                                                                       .array(),
                                                                                             !lastChunk,
@@ -418,7 +419,7 @@ public class ClientProducerImpl implements ClientProducerInternal
             if (sendBlocking && lastChunk)
             {
                // When sending it blocking, only the last chunk will be blocking.
-               channel.sendBlocking(chunk);
+               channel.sendBlocking(chunk, PacketImpl.NULL_RESPONSE);
             }
             else
             {
@@ -540,7 +541,7 @@ public class ClientProducerImpl implements ClientProducerInternal
          if (sendBlocking && lastPacket)
          {
             // When sending it blocking, only the last chunk will be blocking.
-            channel.sendBlocking(chunk);
+            channel.sendBlocking(chunk, PacketImpl.NULL_RESPONSE);
          }
          else
          {

@@ -11,26 +11,27 @@
  * permissions and limitations under the License.
  */
 package org.hornetq.tests.integration.xa;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-
 import junit.framework.Assert;
-
 import org.hornetq.api.core.HornetQException;
+import org.hornetq.api.core.Interceptor;
 import org.hornetq.api.core.SimpleString;
 import org.hornetq.api.core.TransportConfiguration;
 import org.hornetq.api.core.client.*;
 import org.hornetq.core.config.impl.ConfigurationImpl;
+import org.hornetq.core.protocol.core.Packet;
+import org.hornetq.core.protocol.core.impl.wireformat.SessionXAStartMessage;
 import org.hornetq.core.remoting.impl.invm.InVMConnectorFactory;
 import org.hornetq.core.server.HornetQServer;
 import org.hornetq.core.server.HornetQServers;
@@ -40,6 +41,7 @@ import org.hornetq.core.settings.impl.AddressSettings;
 import org.hornetq.core.transaction.Transaction;
 import org.hornetq.core.transaction.TransactionOperation;
 import org.hornetq.core.transaction.impl.XidImpl;
+import org.hornetq.spi.core.protocol.RemotingConnection;
 import org.hornetq.tests.util.UnitTestCase;
 import org.hornetq.utils.UUIDGenerator;
 
@@ -505,11 +507,62 @@ public class XaTimeoutTest extends UnitTestCase
       for(int i = 0; i < clientSessions.length/2; i++)
       {
          ClientMessage m = clientConsumer.receiveImmediate();
-         Assert.assertNotNull(m);   
+         Assert.assertNotNull(m);
       }
       ClientMessage m = clientConsumer.receiveImmediate();
       Assert.assertNull(m);
    }
+
+// HORNETQ-1117 - Test that will timeout on a XA transaction and then will perform another XA operation
+   public void testTimeoutOnXACall() throws Exception
+   {
+      final CountDownLatch latch = new CountDownLatch(1);
+      class SomeInterceptor implements Interceptor
+      {
+         /* (non-Javadoc)
+          * @see org.hornetq.api.core.Interceptor#intercept(org.hornetq.core.protocol.core.Packet, org.hornetq.spi.core.protocol.RemotingConnection)
+          */
+         @Override
+         public boolean intercept(Packet packet, RemotingConnection connection) throws HornetQException
+         {
+            if (packet instanceof SessionXAStartMessage)
+            {
+               try
+               {
+                  latch.await(1, TimeUnit.MINUTES);
+               }
+               catch (InterruptedException e)
+               {
+                  e.printStackTrace();
+               }
+            }
+            return true;
+         }
+
+      }
+      messagingService.getRemotingService().addInterceptor(new SomeInterceptor());
+
+      ServerLocator locatorTimeout = HornetQClient.createServerLocatorWithoutHA(new TransportConfiguration(InVMConnectorFactory.class.getName()));
+      locatorTimeout.setCallTimeout(300);
+      ClientSessionFactory factoryTimeout = locatorTimeout.createSessionFactory();
+      final ClientSession sessionTimeout  = factoryTimeout.createSession(true, false, false);
+
+      Xid xid = newXID();
+      try
+      {
+         sessionTimeout.start(xid, XAResource.TMNOFLAGS);
+      }
+      catch (Exception e)
+      {
+         e.printStackTrace();
+      }
+
+      latch.countDown();
+      sessionTimeout.setTransactionTimeout(30);
+
+      sessionTimeout.close();
+   }
+
 
    class RollbackCompleteOperation implements TransactionOperation
    {
@@ -549,7 +602,7 @@ public class XaTimeoutTest extends UnitTestCase
       {
          return Collections.emptySet();
       }
-      
+
       public List<MessageReference> getRelatedMessageReferences()
       {
          return null;
