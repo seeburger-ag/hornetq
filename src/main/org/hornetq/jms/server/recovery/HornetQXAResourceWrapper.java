@@ -14,7 +14,6 @@
 package org.hornetq.jms.server.recovery;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -59,7 +58,7 @@ public class HornetQXAResourceWrapper implements XAResource, SessionFailureListe
 
    private XARecoveryConfig[] xaRecoveryConfigs;
 
-   private final AtomicBoolean closed = new AtomicBoolean(false);
+   private volatile boolean closed = false;
 
    // private TransportConfiguration currentConnection;
 
