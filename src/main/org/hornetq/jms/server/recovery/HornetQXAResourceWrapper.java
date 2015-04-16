@@ -14,6 +14,7 @@
 package org.hornetq.jms.server.recovery;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -28,18 +29,18 @@ import org.hornetq.core.logging.Logger;
 
 /**
  * XAResourceWrapper.
- * 
+ *
  * Mainly from org.jboss.server.XAResourceWrapper from the JBoss AS server module
- * 
+ *
  * The reason why we don't use that class directly is that it assumes on failure of connection
  * the RM_FAIL or RM_ERR is thrown, but in HornetQ we throw XA_RETRY since we want the recovery manager to be able
  * to retry on failure without having to manually retry
- * 
+ *
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author <a href="tim.fox@jboss.com">Tim Fox/a>
  * @author <a href="mailto:jmesnil@redhat.com">Jeff Mesnil</a>
  * @author <a href="mailto:andy.taylor@jboss.org">Andy Taylor</a>
- * 
+ *
  * @version $Revision: 45341 $
  */
 public class HornetQXAResourceWrapper implements XAResource, SessionFailureListener
@@ -58,6 +59,8 @@ public class HornetQXAResourceWrapper implements XAResource, SessionFailureListe
 
    private XARecoveryConfig[] xaRecoveryConfigs;
 
+   private final AtomicBoolean closed = new AtomicBoolean(false);
+
    // private TransportConfiguration currentConnection;
 
    public HornetQXAResourceWrapper(XARecoveryConfig... xaRecoveryConfigs)
@@ -74,6 +77,12 @@ public class HornetQXAResourceWrapper implements XAResource, SessionFailureListe
 
    public Xid[] recover(final int flag) throws XAException
    {
+      if (closed)
+      {
+         log.warn("HornetQXAResource wrapper closed. Recovery of XA resources will be skipped!");
+         return new Xid[]{};
+      }
+
       XAResource xaResource = getDelegate(false);
       HornetQXAResourceWrapper.log.debug("Recover " + xaResource);
       try
@@ -238,7 +247,7 @@ public class HornetQXAResourceWrapper implements XAResource, SessionFailureListe
 
    /**
     * Get the connectionFactory XAResource
-    * 
+    *
     * @return the connectionFactory
     * @throws XAException for any problem
     */
@@ -289,7 +298,7 @@ public class HornetQXAResourceWrapper implements XAResource, SessionFailureListe
 
    /**
     * Connect to the server if not already done so
-    * 
+    *
     * @return the connectionFactory XAResource
     * @throws Exception for any problem
     */
@@ -396,12 +405,14 @@ public class HornetQXAResourceWrapper implements XAResource, SessionFailureListe
       {
          HornetQXAResourceWrapper.log.trace("Ignored error during close", ignored);
       }
+
+      closed = true;
    }
 
    /**
     * Check whether an XAException is fatal. If it is an RM problem
     * we close the connection so the next call will reconnect.
-    * 
+    *
     * @param e the xa exception
     * @return never
     * @throws XAException always

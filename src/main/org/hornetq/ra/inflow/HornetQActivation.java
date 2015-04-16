@@ -13,8 +13,8 @@
 package org.hornetq.ra.inflow;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.jms.Destination;
@@ -32,6 +32,7 @@ import javax.resource.spi.work.WorkManager;
 import org.hornetq.api.core.HornetQException;
 import org.hornetq.api.core.SimpleString;
 import org.hornetq.api.core.client.ClientSession;
+import org.hornetq.api.core.client.SessionFailureListener;
 import org.hornetq.api.jms.HornetQJMSClient;
 import org.hornetq.core.client.impl.ClientSessionInternal;
 import org.hornetq.core.logging.Logger;
@@ -54,7 +55,7 @@ public class HornetQActivation
    /**
     * The logger
     */
-   private static final Logger log = Logger.getLogger(HornetQActivation.class);
+   protected static final Logger log = Logger.getLogger(HornetQActivation.class);
 
    /**
     * Trace enabled
@@ -69,7 +70,7 @@ public class HornetQActivation
    /**
     * The resource adapter
     */
-   private final HornetQResourceAdapter ra;
+   protected final HornetQResourceAdapter ra;
 
    /**
     * The activation spec
@@ -101,7 +102,7 @@ public class HornetQActivation
    /** The name of the temporary subscription name that all the sessions will share */
    private SimpleString topicTemporaryQueue;
 
-   private final List<HornetQMessageHandler> handlers = new ArrayList<HornetQMessageHandler>();
+   protected final List<HornetQMessageHandler> handlers = new CopyOnWriteArrayList<HornetQMessageHandler>();
 
    private HornetQConnectionFactory factory;
 
@@ -293,6 +294,7 @@ public class HornetQActivation
          {
             session = setupSession();
             HornetQMessageHandler handler = new HornetQMessageHandler(this, ra.getTM(), (ClientSessionInternal) session, i);
+            session.addFailureListener(new ReconnectFailureListener(handler));
             handler.setup();
             session.start();
             handlers.add(handler);
@@ -303,7 +305,7 @@ public class HornetQActivation
             {
                session.close();
             }
-            
+
             throw e;
          }
       }
@@ -524,7 +526,7 @@ public class HornetQActivation
 
    /**
     * Handles any failure by trying to reconnect
-    * 
+    *
     * @param failure the reason for the failure
     */
    public void handleFailure(Throwable failure)
@@ -540,7 +542,7 @@ public class HornetQActivation
       int reconnectCount = 0;
       int setupAttempts = spec.getSetupAttempts();
       long setupInterval = spec.getSetupInterval();
-      
+
       // Only enter the failure loop once
       if (inFailure.getAndSet(true))
          return;
@@ -564,7 +566,7 @@ public class HornetQActivation
             try
             {
                setup();
-               log.info("Reconnected with HornetQ");            
+               log.info("Reconnected with HornetQ");
                break;
             }
             catch (Throwable t)
@@ -596,7 +598,7 @@ public class HornetQActivation
    /**
     * Handles the setup
     */
-   private class SetupActivation implements Work
+   protected class SetupActivation implements Work
    {
       public void run()
       {
@@ -614,4 +616,53 @@ public class HornetQActivation
       {
       }
    }
+
+
+   private class ReconnectFailureListener implements SessionFailureListener
+   {
+      private final HornetQMessageHandler handler;
+
+
+      public ReconnectFailureListener(HornetQMessageHandler handler)
+      {
+         this.handler = handler;
+      }
+
+
+      /* (non-Javadoc)
+       * @see org.hornetq.core.remoting.FailureListener#connectionFailed(org.hornetq.api.core.HornetQException, boolean)
+       */
+      public void connectionFailed(HornetQException exception, boolean failedOver)
+      {
+         if (!failedOver)
+         {
+            handlers.remove(handler);
+            handler.teardown();
+            ClientSession session = null;
+            try
+            {
+               session = setupSession();
+               HornetQMessageHandler newHandler = new HornetQMessageHandler(handler.getActivation(), ra.getTM(), (ClientSessionInternal) session, handler.getSessionNr());
+               session.addFailureListener(new ReconnectFailureListener(newHandler));
+               newHandler.setup();
+               session.start();
+               handlers.add(newHandler);
+               log.info("Successfully re-created message handler for destination " + handler.getActivation().getActivationSpec().getDestination());
+            }
+            catch (Exception e)
+            {
+               log.error("Exception while re-creating session for message handler for destination " + handler.getActivation().getActivationSpec().getDestination());
+            }
+         }
+      }
+
+      /* (non-Javadoc)
+       * @see org.hornetq.api.core.client.SessionFailureListener#beforeReconnect(org.hornetq.api.core.HornetQException)
+       */
+      public void beforeReconnect(HornetQException exception)
+      {
+
+      }
+   }
+
 }
