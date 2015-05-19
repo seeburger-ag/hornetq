@@ -52,6 +52,7 @@ import javax.transaction.xa.XAResource;
 
 import org.hornetq.core.logging.Logger;
 import org.hornetq.jms.client.HornetQConnection;
+import org.hornetq.jms.client.HornetQConnectionFactory;
 
 /**
  * The managed connection
@@ -74,6 +75,9 @@ public class HornetQRAManagedConnection implements ManagedConnection, ExceptionL
    /** The connection request information */
    private final HornetQRAConnectionRequestInfo cri;
 
+   /** The resource adapter */
+   private HornetQResourceAdapter ra;
+
    /** The user name */
    private final String userName;
 
@@ -92,7 +96,9 @@ public class HornetQRAManagedConnection implements ManagedConnection, ExceptionL
    /** Lock */
    private ReentrantLock lock = new ReentrantLock();
 
-   // Physical JMS connection stuff
+   // Physical connection stuff
+   private HornetQConnectionFactory connectionFactory;
+
    private Connection connection;
 
    private Session session;
@@ -114,7 +120,7 @@ public class HornetQRAManagedConnection implements ManagedConnection, ExceptionL
     */
    public HornetQRAManagedConnection(final HornetQRAManagedConnectionFactory mcf,
                                      final HornetQRAConnectionRequestInfo cri,
-                                     final TransactionManager tm,
+                                     final HornetQResourceAdapter ra,
                                      final String userName,
                                      final String password) throws ResourceException
    {
@@ -125,7 +131,8 @@ public class HornetQRAManagedConnection implements ManagedConnection, ExceptionL
 
       this.mcf = mcf;
       this.cri = cri;
-      this.tm = tm;
+      this.tm = ra.getTM();
+      this.ra = ra;
       this.userName = userName;
       this.password = password;
       eventListeners = Collections.synchronizedList(new ArrayList<ConnectionEventListener>());
@@ -274,6 +281,12 @@ public class HornetQRAManagedConnection implements ManagedConnection, ExceptionL
          {
             connection.close();
          }
+
+         // we must close the HornetQConnectionFactory because it contains a ServerLocator
+         if (connectionFactory != null)
+         {
+            connectionFactory.close();
+         }
       }
       catch (Throwable e)
       {
@@ -302,7 +315,7 @@ public class HornetQRAManagedConnection implements ManagedConnection, ExceptionL
       inManagedTx = false;
 
       inManagedTx = false;
-      
+
       // I'm recreating the lock object when we return to the pool
       // because it looks too nasty to expect the connection handle
       // to unlock properly in certain race conditions
@@ -334,7 +347,7 @@ public class HornetQRAManagedConnection implements ManagedConnection, ExceptionL
          throw new IllegalStateException("ManagedConnection in an illegal state");
       }
    }
-   
+
    public void checkTransactionActive() throws JMSException
    {
       // don't bother looking at the transaction if there's an active XID
@@ -591,7 +604,7 @@ public class HornetQRAManagedConnection implements ManagedConnection, ExceptionL
    /**
     * Get the session for this connection.
     * @return The session
-    * @throws JMSException 
+    * @throws JMSException
     */
    protected Session getSession() throws JMSException
    {
@@ -603,7 +616,7 @@ public class HornetQRAManagedConnection implements ManagedConnection, ExceptionL
          }
 
          return xaSession.getSession();
-      } 
+      }
       else
       {
          if (HornetQRAManagedConnection.trace)
@@ -764,18 +777,19 @@ public class HornetQRAManagedConnection implements ManagedConnection, ExceptionL
 
       try
       {
+         connectionFactory = ra.createHornetQConnectionFactory(mcf.getProperties());
          boolean transacted = cri.isTransacted();
          int acknowledgeMode =  Session.AUTO_ACKNOWLEDGE;
-         
+
          if (cri.getType() == HornetQRAConnectionFactory.TOPIC_CONNECTION)
          {
             if (userName != null && password != null)
             {
-               connection = mcf.getHornetQConnectionFactory().createXATopicConnection(userName, password);
+               connection = connectionFactory.createXATopicConnection(userName, password);
             }
             else
             {
-               connection = mcf.getHornetQConnectionFactory().createXATopicConnection();
+               connection = connectionFactory.createXATopicConnection();
             }
 
             connection.setExceptionListener(this);
@@ -787,11 +801,11 @@ public class HornetQRAManagedConnection implements ManagedConnection, ExceptionL
          {
             if (userName != null && password != null)
             {
-               connection = mcf.getHornetQConnectionFactory().createXAQueueConnection(userName, password);
+               connection = connectionFactory.createXAQueueConnection(userName, password);
             }
             else
             {
-               connection = mcf.getHornetQConnectionFactory().createXAQueueConnection();
+               connection = connectionFactory.createXAQueueConnection();
             }
 
             connection.setExceptionListener(this);
@@ -803,11 +817,11 @@ public class HornetQRAManagedConnection implements ManagedConnection, ExceptionL
          {
             if (userName != null && password != null)
             {
-               connection = mcf.getHornetQConnectionFactory().createXAConnection(userName, password);
+               connection = connectionFactory.createXAConnection(userName, password);
             }
             else
             {
-               connection = mcf.getHornetQConnectionFactory().createXAConnection();
+               connection = connectionFactory.createXAConnection();
             }
 
             connection.setExceptionListener(this);
@@ -821,7 +835,7 @@ public class HornetQRAManagedConnection implements ManagedConnection, ExceptionL
          throw new ResourceException(je.getMessage(), je);
       }
    }
-   
+
    protected void setInManagedTx(boolean inManagedTx)
    {
       this.inManagedTx = inManagedTx;
