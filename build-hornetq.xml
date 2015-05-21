@@ -1123,7 +1123,7 @@
             <include name="jboss-jms-api.jar"/>
          </fileset>
       </copy>
-      <copy file="${org.jboss.netty.lib}/${netty.jar.name}" tofile="${build.distro.lib.dir}/netty.jar"/>
+      <copy file="${io.netty.lib}/${netty.jar.name}" tofile="${build.distro.lib.dir}/netty.jar"/>
       <copy file="${org.twitter4j.lib}/${twitter4j.jar.name}" tofile="${build.distro.lib.dir}/${twitter4j.jar.name}"/>
       <copy todir="${build.distro.config.dir}">
          <fileset dir="${src.config.dir}">
