@@ -117,17 +117,17 @@
         <dependency>
             <groupId>org.hornetq</groupId>
             <artifactId>hornetq-core</artifactId>
-       <version>${hornetq.version}</version>
+	    <version>${hornetq.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.netty</groupId>
+            <groupId>org.jboss.netty</groupId>
             <artifactId>netty</artifactId>
-            <version>3.9.8.Final</version>
+            <version>3.2.0.Final</version>
         </dependency>
         <dependency>
             <groupId>org.hornetq</groupId>
             <artifactId>hornetq-jms</artifactId>
-       <version>${hornetq.version}</version>
+	    <version>${hornetq.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.spec.javax.jms</groupId>
@@ -137,17 +137,17 @@
         <dependency>
             <groupId>org.hornetq.rest</groupId>
             <artifactId>hornetq-rest</artifactId>
-       <version>${hornetq.version}</version>
+	    <version>${hornetq.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-jaxrs</artifactId>
-       <version>${resteasy.version}</version>
+	    <version>${resteasy.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-jaxb-provider</artifactId>
-       <version>${resteasy.version}</version>
+	    <version>${resteasy.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

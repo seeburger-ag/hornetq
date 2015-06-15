@@ -19,9 +19,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>io.netty</groupId>
+            <groupId>org.jboss.netty</groupId>
             <artifactId>netty</artifactId>
-            <version>3.9.8.Final</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
