@@ -19,7 +19,7 @@ Copyright 2009 Red Hat, Inc.
    <groupId>com.seeburger.as</groupId>
    <artifactId>messaging</artifactId>
    <packaging>pom</packaging>
-   <version>2.2.13.SEE6</version>
+   <version>2.2.13.SEE7-SNAPSHOT</version>
 
     <properties>
         <resteasy.version>2.1.0.GA</resteasy.version>
