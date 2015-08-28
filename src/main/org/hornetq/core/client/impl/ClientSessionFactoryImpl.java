@@ -84,16 +84,16 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
 
    private static final long serialVersionUID = 2512460695662741413L;
 
-   private static final Logger log = Logger.getLogger(ClientSessionFactoryImpl.class);
+   protected static final Logger log = Logger.getLogger(ClientSessionFactoryImpl.class);
 
-   private static final boolean isTrace = ClientSessionFactoryImpl.log.isTraceEnabled();
+   protected static final boolean isTrace = ClientSessionFactoryImpl.log.isTraceEnabled();
 
-   private static final boolean isDebug = ClientSessionFactoryImpl.log.isDebugEnabled();
+   protected static final boolean isDebug = ClientSessionFactoryImpl.log.isDebugEnabled();
 
    // Attributes
    // -----------------------------------------------------------------------------------
 
-   private final ServerLocatorInternal serverLocator;
+   protected final ServerLocatorInternal serverLocator;
 
    private TransportConfiguration connectorConfig;
 
@@ -105,9 +105,9 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
 
    private final long callTimeout;
 
-   private final long clientFailureCheckPeriod;
+   protected final long clientFailureCheckPeriod;
 
-   private final long connectionTTL;
+   protected final long connectionTTL;
 
    private final Set<ClientSessionInternal> sessions = new HashSet<ClientSessionInternal>();
 
@@ -121,13 +121,13 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
 
    private final ExecutorFactory orderedExecutorFactory;
 
-   private final Executor threadPool;
+   protected final Executor threadPool;
 
    private final ScheduledExecutorService scheduledThreadPool;
 
-   private final Executor closeExecutor;
+   protected final Executor closeExecutor;
 
-   private CoreRemotingConnection connection;
+   protected CoreRemotingConnection connection;
 
    private final long retryInterval;
 
@@ -149,7 +149,7 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
 
    private final List<Interceptor> interceptors;
 
-   private volatile boolean stopPingingAfterOne;
+   protected volatile boolean stopPingingAfterOne;
 
    private volatile boolean closed;
 
@@ -551,7 +551,7 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
    // Private
    // --------------------------------------------------------------------------------------
 
-   private void handleConnectionFailure(final Object connectionID, final HornetQException me)
+   protected void handleConnectionFailure(final Object connectionID, final HornetQException me)
    {
       failoverOrReconnect(connectionID, me);
    }
@@ -1074,19 +1074,22 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
 
    private void checkCloseConnection()
    {
-      if (connection != null && sessions.size() == 0)
+      if (sessions.size() == 0)
       {
          cancelScheduledTasks();
 
-         try
+         if(connection != null )
          {
-            connection.destroy();
-         }
-         catch (Throwable ignore)
-         {
-         }
+            try
+            {
+               connection.destroy();
+            }
+            catch (Throwable ignore)
+            {
+            }
 
-         connection = null;
+            connection = null;
+         }
 
          try
          {
@@ -1424,9 +1427,9 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
 
    private class Channel0Handler implements ChannelHandler
    {
-      private final CoreRemotingConnection conn;
+      protected final CoreRemotingConnection conn;
 
-      private Channel0Handler(final CoreRemotingConnection conn)
+      protected Channel0Handler(final CoreRemotingConnection conn)
       {
          this.conn = conn;
       }
@@ -1531,7 +1534,7 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
       }
    }
 
-   private class DelegatingBufferHandler implements BufferHandler
+   protected class DelegatingBufferHandler implements BufferHandler
    {
       public void bufferReceived(final Object connectionID, final HornetQBuffer buffer)
       {
@@ -1580,9 +1583,9 @@ public class ClientSessionFactoryImpl implements ClientSessionFactoryInternal, C
 
    }
 
-   private final class PingRunnable implements Runnable
+   protected final class PingRunnable implements Runnable
    {
-      private boolean cancelled;
+      private volatile boolean cancelled;
 
       private boolean first;
 
