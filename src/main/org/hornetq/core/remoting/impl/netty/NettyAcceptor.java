@@ -90,34 +90,34 @@ public class NettyAcceptor implements Acceptor
    static final Logger log = Logger.getLogger(NettyAcceptor.class);
 
    private ClusterConnection clusterConnection;
-   
+
    private ChannelFactory channelFactory;
 
    private volatile ChannelGroup serverChannelGroup;
 
-   private volatile ChannelGroup channelGroup;
+   protected volatile ChannelGroup channelGroup;
 
    private ServerBootstrap bootstrap;
 
-   private final BufferHandler handler;
+   protected final BufferHandler handler;
 
-   private final BufferDecoder decoder;
+   protected final BufferDecoder decoder;
 
-   private final ConnectionLifeCycleListener listener;
+   protected final ConnectionLifeCycleListener listener;
 
-   private final boolean sslEnabled;
+   protected final boolean sslEnabled;
 
-   private final boolean httpEnabled;
+   protected final boolean httpEnabled;
 
    private final long httpServerScanPeriod;
 
-   private final long httpResponseTime;
+   protected final long httpResponseTime;
 
    private final boolean useNio;
 
    private final boolean useInvm;
 
-   private final ProtocolType protocol;
+   protected final ProtocolType protocol;
 
    private final String host;
 
@@ -139,12 +139,12 @@ public class NettyAcceptor implements Acceptor
 
    private final int nioRemotingThreads;
 
-   private final HttpKeepAliveRunnable httpKeepAliveRunnable;
-   
-   private HttpAcceptorHandler httpHandler = null;
+   protected final HttpKeepAliveRunnable httpKeepAliveRunnable;
 
-   private final ConcurrentMap<Object, NettyConnection> connections = new ConcurrentHashMap<Object, NettyConnection>();
-   
+   protected HttpAcceptorHandler httpHandler;
+
+   protected final ConcurrentMap<Object, NettyConnection> connections = new ConcurrentHashMap<Object, NettyConnection>();
+
    private final Map<String, Object> configuration;
 
    private final Executor threadPool;
@@ -152,8 +152,6 @@ public class NettyAcceptor implements Acceptor
    private final ScheduledExecutorService scheduledThreadPool;
 
    private NotificationService notificationService;
-
-   private VirtualExecutorService bossExecutor;
 
    private boolean paused;
 
@@ -164,7 +162,7 @@ public class NettyAcceptor implements Acceptor
    private final long batchDelay;
 
    private final boolean directDeliver;
-   
+
 
    public NettyAcceptor(final Map<String, Object> configuration,
                         final BufferHandler handler,
@@ -185,11 +183,11 @@ public class NettyAcceptor implements Acceptor
                         final Executor threadPool,
                         final ScheduledExecutorService scheduledThreadPool)
    {
-      
+
       this.clusterConnection = clusterConnection;
-      
+
       this.configuration = configuration;
-      
+
       this.handler = handler;
 
       this.decoder = decoder;
@@ -301,8 +299,7 @@ public class NettyAcceptor implements Acceptor
          return;
       }
 
-      bossExecutor = new VirtualExecutorService(threadPool);
-      VirtualExecutorService workerExecutor = new VirtualExecutorService(threadPool);
+      VirtualExecutorService virtualExecutor = new VirtualExecutorService(threadPool);
 
       if (useInvm)
       {
@@ -323,11 +320,11 @@ public class NettyAcceptor implements Acceptor
             threadsToUse = this.nioRemotingThreads;
          }
 
-         channelFactory = new NioServerSocketChannelFactory(bossExecutor, workerExecutor, threadsToUse);
+         channelFactory = new NioServerSocketChannelFactory(virtualExecutor, virtualExecutor, threadsToUse);
       }
       else
       {
-         channelFactory = new OioServerSocketChannelFactory(bossExecutor, workerExecutor);
+         channelFactory = new OioServerSocketChannelFactory(virtualExecutor, virtualExecutor);
       }
 
       bootstrap = new ServerBootstrap(channelFactory);
@@ -373,7 +370,7 @@ public class NettyAcceptor implements Acceptor
             if (httpEnabled)
             {
                handlers.put("http-decoder", new HttpRequestDecoder());
-               
+
                handlers.put("http-aggregator", new HttpChunkAggregator(Integer.MAX_VALUE));
 
                handlers.put("http-encoder", new HttpResponseEncoder());
@@ -423,6 +420,7 @@ public class NettyAcceptor implements Acceptor
             }
             else
             {
+               // new: pipeline = Channels.pipeline(handlers.values().toArray(new ChannelHandler[handlers.size()]));
                pipeline = new StaticChannelPipeline(handlers.values().toArray(new ChannelHandler[handlers.size()]));
             }
 
@@ -441,9 +439,9 @@ public class NettyAcceptor implements Acceptor
       {
          bootstrap.setOption("child.sendBufferSize", tcpSendBufferSize);
       }
-      bootstrap.setOption("reuseAddress", true);
-      bootstrap.setOption("child.reuseAddress", true);
-      bootstrap.setOption("child.keepAlive", true);
+      bootstrap.setOption("reuseAddress", Boolean.TRUE);
+      bootstrap.setOption("child.reuseAddress", Boolean.TRUE);
+      bootstrap.setOption("child.keepAlive", Boolean.TRUE);
 
       channelGroup = new DefaultChannelGroup("hornetq-accepted-channels");
 
@@ -510,7 +508,7 @@ public class NettyAcceptor implements Acceptor
          serverChannelGroup.add(serverChannel);
       }
    }
-   
+
    public Map<String, Object> getConfiguration()
    {
       return this.configuration;
@@ -587,7 +585,7 @@ public class NettyAcceptor implements Acceptor
             e.printStackTrace();
          }
       }
-      
+
       if (httpHandler != null)
       {
          httpHandler.shutdown();
@@ -627,17 +625,6 @@ public class NettyAcceptor implements Acceptor
                NettyAcceptor.log.warn(channel + " is still bound to " + channel.getRemoteAddress());
             }
          }
-      }
-      // TODO remove workaround when integrating Netty 3.2.x
-      // https://jira.jboss.org/jira/browse/NETTY-256
-      bossExecutor.shutdown();
-      try
-      {
-         bossExecutor.awaitTermination(30, TimeUnit.SECONDS);
-      }
-      catch (InterruptedException e)
-      {
-         e.printStackTrace();
       }
 
       paused = true;
@@ -707,7 +694,7 @@ public class NettyAcceptor implements Acceptor
       }
    }
 
-   private class Listener implements ConnectionLifeCycleListener
+   protected class Listener implements ConnectionLifeCycleListener
    {
       public void connectionCreated(final Acceptor acceptor, final Connection connection, final ProtocolType protocol)
       {
@@ -744,15 +731,15 @@ public class NettyAcceptor implements Acceptor
       public void connectionReadyForWrites(final Object connectionID, boolean ready)
       {
          NettyConnection conn = connections.get(connectionID);
-         
+
          if (conn != null)
          {
             conn.fireReady(ready);
-         }         
-      }            
+         }
+      }
    }
 
-   private class BatchFlusher implements Runnable
+   protected class BatchFlusher implements Runnable
    {
       private boolean cancelled;
 
