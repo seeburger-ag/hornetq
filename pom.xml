@@ -239,7 +239,7 @@ Copyright 2009 Red Hat, Inc.
       <dependency>
          <groupId>io.netty</groupId>
          <artifactId>netty</artifactId>
-         <version>3.9.8.Final</version>
+         <version>3.9.9.Final</version>
       </dependency>
       <!--needed to compile the logging jar-->
       <dependency>
