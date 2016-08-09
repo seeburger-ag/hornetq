@@ -45,7 +45,7 @@ try
    sf = locator.createClientSessionFactory();;
 
    session = sf.createSession(...);
-   
+
    ... do some stuff with the session...
 }
 finally
@@ -54,7 +54,7 @@ finally
    {
       session.close();
    }
-   
+
    if (sf != null)
    {
       sf.close();
@@ -110,7 +110,9 @@ finally
             instance, or if you're deploying JMS connection factory instances direct into JNDI on
             the server side, you can specify it in the xml config, using the parameter <literal
                 >connection-ttl</literal>.</para>
-        <para>The default value for connection ttl is <literal>60000</literal>ms, i.e. 1 minute. A
+        <para>The default value for connection ttl on an "unreliable" connection (e.g. a Netty
+            connection) is <literal>60000</literal>ms, i.e. 1 minute. The default value for connection
+            ttl on a "reliable" connection (e.g. an in-vm connection) is <literal>-1</literal>. A
             value of <literal>-1</literal> for <literal>ConnectionTTL</literal> means the server
             will never time out the connection on the server side.</para>
         <para>If you do not wish clients to be able to specify their own connection TTL, you can
@@ -128,7 +130,7 @@ finally
                 a warning similar to the following in the logs (If you are using JMS the warning
                 will involve a JMS connection not a client session):</para>
             <programlisting>
-                
+
 [Finalizer] 20:14:43,244 WARNING [org.hornetq.core.client.impl.DelegatingSession]  I'm closin
 g a ClientSession you left open. Please make sure you close all ClientSessions explicitly before let
 ting them go out of scope!
@@ -136,8 +138,8 @@ ting them go out of scope!
 on you didn't close was created here:
 java.lang.Exception
 at org.hornetq.core.client.impl.DelegatingSession.&lt;init&gt;(DelegatingSession.java:83)
-at org.acme.yourproject.YourClass (YourClass.java:666)    
-                
+at org.acme.yourproject.YourClass (YourClass.java:666)
+
             </programlisting>
             <para>HornetQ will then close the connection / client session for you.</para>
             <para>Note that the log will also tell you the exact line of your user code where you
@@ -163,8 +165,10 @@ at org.acme.yourproject.YourClass (YourClass.java:666)
             deploying JMS connection factory instances direct into JNDI on the server side, you can
             specify it in the <literal>hornetq-jms.xml </literal> configuration file, using the
             parameter <literal>client-failure-check-period</literal>.</para>
-        <para>The default value for client failure check period is <literal>30000</literal>ms, i.e.
-            30 seconds. A value of <literal>-1</literal> means the client will never fail the
+        <para>The default value for client failure check period on an "unreliable" connection (e.g.
+            a Netty connection) is <literal>30000</literal>ms, i.e. 30 seconds. The default value
+            for client failure check period on a "reliable" connection (e.g. an in-vm connection)
+            is <literal>-1</literal>. A value of <literal>-1</literal> means the client will never fail the
             connection on the client side if no data is received from the server. Typically this is
             much lower than connection TTL to allow clients to reconnect in case of transitory
             failure.</para>
@@ -177,7 +181,7 @@ at org.acme.yourproject.YourClass (YourClass.java:666)
             that the remoting thread is not tied up for too long. However, please note that
             processing operations asynchronously on another thread adds a little more latency.
             Please note that most short running operations are always handled on the remoting thread for performance reasons.
-           
+
             To enable asynchronous connection execution, set the parameter <literal
                 >async-connection-execution-enabled</literal> in <literal
                 >hornetq-configuration.xml</literal> to <literal>true</literal> (default value is

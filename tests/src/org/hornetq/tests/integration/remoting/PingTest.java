@@ -30,6 +30,7 @@ import org.hornetq.core.logging.Logger;
 import org.hornetq.core.protocol.core.CoreRemotingConnection;
 import org.hornetq.core.protocol.core.Packet;
 import org.hornetq.core.protocol.core.impl.PacketImpl;
+import org.hornetq.core.protocol.core.impl.wireformat.Ping;
 import org.hornetq.core.remoting.CloseListener;
 import org.hornetq.core.remoting.server.impl.RemotingServiceImpl;
 import org.hornetq.core.server.HornetQServer;
@@ -38,9 +39,9 @@ import org.hornetq.tests.util.ServiceTestBase;
 
 /**
  * @author <a href="mailto:jmesnil@redhat.com">Jeff Mesnil</a>
- * 
+ *
  * @author <a href="mailto:tim.fox@jboss.com">Tim Fox</a>
- * 
+ *
  * @version <tt>$Revision$</tt>
  */
 public class PingTest extends ServiceTestBase
@@ -209,6 +210,48 @@ public class PingTest extends ServiceTestBase
       PingTest.log.info("Serverconn2 is " + serverConn2);
 
       Assert.assertTrue(serverConn == serverConn2);
+
+      session.close();
+
+      csf.close();
+
+      locator.close();
+   }
+
+   /*
+    * Test that pinging is disabled for in-vm connection when using the default settings
+    */
+   public void testNoPingingOnInVMConnection() throws Exception
+   {
+      // server should receive one and only one ping from the client so that
+      // the server connection TTL is configured with the client value
+      final CountDownLatch requiredPings = new CountDownLatch(1);
+      final CountDownLatch unwantedPings = new CountDownLatch(2);
+      server.getRemotingService().addIncomingInterceptor(new Interceptor()
+      {
+         public boolean intercept(final Packet packet, final RemotingConnection connection) throws HornetQException
+         {
+            if (packet.getType() == PacketImpl.PING)
+            {
+               Assert.assertEquals(HornetQClient.DEFAULT_CONNECTION_TTL_INVM, ((Ping) packet).getConnectionTTL());
+               unwantedPings.countDown();
+               requiredPings.countDown();
+            }
+            return true;
+         }
+      });
+
+      TransportConfiguration transportConfig = new TransportConfiguration("org.hornetq.core.remoting.impl.invm.InVMConnectorFactory");
+      ServerLocator locator = addServerLocator(HornetQClient.createServerLocatorWithoutHA(transportConfig));
+      ClientSessionFactory csf = createSessionFactory(locator);
+
+      ClientSession session = csf.createSession(false, true, true);
+
+      Assert.assertEquals(1, ((ClientSessionFactoryInternal)csf).numConnections());
+
+      Assert.assertTrue("server didn't received an expected ping from the client", requiredPings.await(5000, TimeUnit.MILLISECONDS));
+
+      Assert.assertFalse("server received an unexpected ping from the client", unwantedPings.await(HornetQClient.DEFAULT_CONNECTION_TTL * 2, TimeUnit.MILLISECONDS));
 
       session.close();
 

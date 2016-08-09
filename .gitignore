@@ -1,2 +1,4 @@
 /thirdparty/
 /build/
+/eclipse-output/
+/tests/build/
