@@ -258,13 +258,15 @@ public class HornetQMessageHandler implements MessageHandler
       HornetQMessage msg = HornetQMessage.createMessage(message, session);
       boolean beforeDelivery = false;
 
+      // assign to local variable in case of concurrent tearDown
+      final MessageEndpoint endpointLocal = endpoint; // in case already null here, error-handling below will kick-in
       try
       {
          if (activation.getActivationSpec().getTransactionTimeout() > 0 && tm != null)
          {
             tm.setTransactionTimeout(activation.getActivationSpec().getTransactionTimeout());
          }
-         endpoint.beforeDelivery(HornetQActivation.ONMESSAGE);
+         endpointLocal.beforeDelivery(HornetQActivation.ONMESSAGE);
          beforeDelivery = true;
          msg.doBeforeReceive();
 
@@ -275,7 +277,7 @@ public class HornetQMessageHandler implements MessageHandler
             message.acknowledge();
          }
 
-         ((MessageListener)endpoint).onMessage(msg);
+         ((MessageListener)endpointLocal).onMessage(msg);
 
          if (!transacted)
          {
@@ -284,7 +286,7 @@ public class HornetQMessageHandler implements MessageHandler
 
          try
          {
-            endpoint.afterDelivery();
+            endpointLocal.afterDelivery();
          }
          catch (ResourceException e)
          {
@@ -333,7 +335,7 @@ public class HornetQMessageHandler implements MessageHandler
 
             try
             {
-               endpoint.afterDelivery();
+               endpointLocal.afterDelivery();
             }
             catch (ResourceException e1)
             {
