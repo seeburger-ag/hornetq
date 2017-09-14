@@ -331,8 +331,11 @@ public class HornetQActivation
       }
       if (spec.isHasBeenUpdated())
       {
-         factory.close();
-         factory = null;
+         if (factory != null)
+         {
+            factory.close();
+            factory = null;
+         }
       }
       HornetQActivation.log.debug("Tearing down complete " + this);
    }
