@@ -40,6 +40,7 @@ import org.hornetq.api.core.HornetQBuffers;
 import org.hornetq.api.core.HornetQException;
 import org.hornetq.api.core.Message;
 import org.hornetq.api.core.Pair;
+import org.hornetq.api.core.PropertyConversionException;
 import org.hornetq.api.core.SimpleString;
 import org.hornetq.core.config.Configuration;
 import org.hornetq.core.config.impl.ConfigurationImpl;
@@ -1765,21 +1766,21 @@ public class JournalStorageManager implements StorageManager
          if (!currentFile.exists())
          {
             // for compatibility: couple with old behaviour, copying the old file to avoid message loss
-            String originalMessageIDString = largeMessage.getStringProperty(Message.HDR_ORIG_MESSAGE_ID);
-            // could have a leading "ID:", like ID:c6e2e367-d77e-11e9-9471-005056b7cdce
-            long originalMessageID;
-            if (originalMessageIDString != null && originalMessageIDString.startsWith("ID:")) {
-               log.warn("Found ORIG_MESSAGE_ID with prefix \"ID:\" for message " + largeMessage);
-               originalMessageID = Long.parseLong(originalMessageIDString.substring("ID:".length()));
-            }
-            else {
-               originalMessageID = largeMessage.getLongProperty(Message.HDR_ORIG_MESSAGE_ID);
-            }
-            SequentialFile linkedFile = createFileForLargeMessage(originalMessageID, true);
-            if (linkedFile.exists())
+            try
             {
-               linkedFile.copyTo(currentFile);
-               linkedFile.close();
+               long originalMessageID = largeMessage.getLongProperty(Message.HDR_ORIG_MESSAGE_ID);
+               SequentialFile linkedFile = createFileForLargeMessage(originalMessageID, true);
+               if (linkedFile.exists())
+               {
+                  linkedFile.copyTo(currentFile);
+                  linkedFile.close();
+               }
+            }
+            catch (NumberFormatException | PropertyConversionException ex)
+            {
+               log.error("Error handling large message in compatibility mode! "
+                        + "Probably " + Message.HDR_ORIG_MESSAGE_ID + " is not a number! "
+                        + "Skipping message. Message=" + largeMessage);
             }
          }
 
