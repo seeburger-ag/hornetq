@@ -102,9 +102,9 @@ import org.hornetq.utils.HornetQThreadFactory;
 import org.hornetq.utils.XidCodecSupport;
 
 /**
- * 
+ *
  * A JournalStorageManager
- * 
+ *
  * @author <a href="mailto:tim.fox@jboss.com">Tim Fox</a>
  * @author <a href="mailto:clebert.suconic@jboss.com">Clebert Suconic</a>
  * @author <a href="jmesnil@redhat.com">Jeff Mesnil</a>
@@ -158,7 +158,7 @@ public class JournalStorageManager implements StorageManager
    public static final byte PAGE_CURSOR_COUNTER_VALUE = 40;
 
    public static final byte PAGE_CURSOR_COUNTER_INC = 41;
-   
+
    private final Semaphore pageMaxConcurrentIO;
 
    private final BatchingIDGenerator idGenerator;
@@ -170,7 +170,7 @@ public class JournalStorageManager implements StorageManager
    private final Journal bindingsJournal;
 
    private final SequentialFileFactory largeMessagesFactory;
-   
+
    private SequentialFileFactory journalFF = null;
 
    private volatile boolean started;
@@ -332,7 +332,7 @@ public class JournalStorageManager implements StorageManager
       largeMessagesFactory = new NIOSequentialFileFactory(largeMessagesDirectory, false, criticalErrorListener);
 
       perfBlastPages = config.getJournalPerfBlastPages();
-      
+
       if (config.getPageMaxConcurrentIO() != 1)
       {
          pageMaxConcurrentIO = new Semaphore(config.getPageMaxConcurrentIO());
@@ -762,7 +762,7 @@ public class JournalStorageManager implements StorageManager
    {
       bindingsJournal.appendCommitRecord(txID, true);
    }
-   
+
    public void rollbackBindings(final long txID) throws Exception
    {
       // no need to sync, it's going away anyways
@@ -1158,7 +1158,7 @@ public class JournalStorageManager implements StorageManager
                {
                   log.info("Can't find queue " + encoding.queueID + " while reloading ACKNOWLEDGE_CURSOR, deleting record now");
                   messageJournal.appendDeleteRecord(record.id, false);
-                  
+
                }
 
                break;
@@ -1760,13 +1760,21 @@ public class JournalStorageManager implements StorageManager
 
       if (largeMessage.containsProperty(Message.HDR_ORIG_MESSAGE_ID))
       {
-         // for compatibility: couple with old behaviour, copying the old file to avoid message loss
-         long originalMessageID = largeMessage.getLongProperty(Message.HDR_ORIG_MESSAGE_ID);
-         
          SequentialFile currentFile = createFileForLargeMessage(largeMessage.getMessageID(), true);
-         
+
          if (!currentFile.exists())
          {
+            // for compatibility: couple with old behaviour, copying the old file to avoid message loss
+            String originalMessageIDString = largeMessage.getStringProperty(Message.HDR_ORIG_MESSAGE_ID);
+            // could have a leading "ID:", like ID:c6e2e367-d77e-11e9-9471-005056b7cdce
+            long originalMessageID;
+            if (originalMessageIDString != null && originalMessageIDString.startsWith("ID:")) {
+               log.warn("Found ORIG_MESSAGE_ID with prefix \"ID:\" for message " + largeMessage);
+               originalMessageID = Long.parseLong(originalMessageIDString.substring("ID:".length()));
+            }
+            else {
+               originalMessageID = largeMessage.getLongProperty(Message.HDR_ORIG_MESSAGE_ID);
+            }
             SequentialFile linkedFile = createFileForLargeMessage(originalMessageID, true);
             if (linkedFile.exists())
             {
@@ -1774,7 +1782,7 @@ public class JournalStorageManager implements StorageManager
                linkedFile.close();
             }
          }
-         
+
          currentFile.close();
       }
 
