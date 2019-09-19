@@ -20,7 +20,7 @@ import org.hornetq.api.core.management.Parameter;
 
 /**
  * A DestinationControl is used to manage a JMS Destination.
- * 
+ *
  * @author <a href="mailto:jmesnil@redhat.com">Jeff Mesnil</a>
  */
 public interface DestinationControl
@@ -46,6 +46,12 @@ public interface DestinationControl
     * Returns the number of messages currently in this destination.
     */
    long getMessageCount() throws Exception;
+
+   /**
+    * Returns the number of messages currently in this destination.
+    * Unlike #getMessageCount this is non-blocking with possible small inaccuracy.
+    */
+   long getMessageCountNonBlocking() throws Exception;
 
    /**
     * Returns the number of messages that this queue is currently delivering to its consumers.

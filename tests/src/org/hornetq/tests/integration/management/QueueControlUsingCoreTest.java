@@ -23,8 +23,6 @@ import org.hornetq.api.core.client.HornetQClient;
 import org.hornetq.api.core.client.ServerLocator;
 import org.hornetq.api.core.management.QueueControl;
 import org.hornetq.api.core.management.ResourceNames;
-import org.hornetq.core.logging.Logger;
-import org.hornetq.core.remoting.impl.invm.InVMConnectorFactory;
 import org.hornetq.tests.util.UnitTestCase;
 
 /**
@@ -38,7 +36,7 @@ public class QueueControlUsingCoreTest extends QueueControlTest
 
    // Constants -----------------------------------------------------
 
-   private static final Logger log = Logger.getLogger(QueueControlUsingCoreTest.class);
+//   private static final Logger log = Logger.getLogger(QueueControlUsingCoreTest.class);
 
    // Attributes ----------------------------------------------------
 
@@ -117,6 +115,11 @@ public class QueueControlUsingCoreTest extends QueueControlTest
          public long getMessageCount()
          {
             return ((Number)proxy.retrieveAttributeValue("messageCount")).longValue();
+         }
+
+         public long getMessageCountNonBlocking()
+         {
+            return ((Number)proxy.retrieveAttributeValue("messageCountNonBlocking")).longValue();
          }
 
          public long getMessagesAdded()

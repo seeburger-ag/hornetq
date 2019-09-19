@@ -40,9 +40,9 @@ import org.hornetq.utils.json.JSONObject;
 
 /**
  * @author <a href="mailto:jmesnil@redhat.com">Jeff Mesnil</a>
- * 
+ *
  * @version <tt>$Revision$</tt>
- * 
+ *
  */
 public class JMSTopicControlImpl extends StandardMBean implements TopicControl
 {
@@ -91,7 +91,7 @@ public class JMSTopicControlImpl extends StandardMBean implements TopicControl
    {
       jmsServerManager.addTopicToJndi(managedTopic.getName(), jndi);
    }
-   
+
 
    /* (non-Javadoc)
     * @see org.hornetq.api.jms.management.TopicControl#removeJNDI(java.lang.String)
@@ -124,7 +124,12 @@ public class JMSTopicControlImpl extends StandardMBean implements TopicControl
 
    public long getMessageCount()
    {
-      return getMessageCount(DurabilityType.ALL);
+      return getMessageCount(DurabilityType.ALL, true);
+   }
+
+   public long getMessageCountNonBlocking()
+   {
+      return getMessageCount(DurabilityType.ALL, false);
    }
 
    public int getDeliveringCount()
@@ -151,12 +156,12 @@ public class JMSTopicControlImpl extends StandardMBean implements TopicControl
 
    public int getDurableMessageCount()
    {
-      return getMessageCount(DurabilityType.DURABLE);
+      return getMessageCount(DurabilityType.DURABLE, true);
    }
 
    public int getNonDurableMessageCount()
    {
-      return getMessageCount(DurabilityType.NON_DURABLE);
+      return getMessageCount(DurabilityType.NON_DURABLE, true);
    }
 
    public int getSubscriptionCount()
@@ -368,13 +373,20 @@ public class JMSTopicControlImpl extends StandardMBean implements TopicControl
       }
    }
 
-   private int getMessageCount(final DurabilityType durability)
+   private int getMessageCount(final DurabilityType durability, boolean blocking)
    {
       List<QueueControl> queues = getQueues(durability);
       int count = 0;
       for (QueueControl queue : queues)
       {
-         count += queue.getMessageCount();
+         if (blocking)
+         {
+            count += queue.getMessageCount();
+         }
+         else
+         {
+            count += queue.getMessageCountNonBlocking();
+         }
       }
       return count;
    }

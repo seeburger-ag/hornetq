@@ -46,9 +46,9 @@ import org.hornetq.utils.json.JSONObject;
 
 /**
  * @author <a href="mailto:jmesnil@redhat.com">Jeff Mesnil</a>
- * 
+ *
  * @version <tt>$Revision$</tt>
- * 
+ *
  */
 public class QueueControlImpl extends AbstractControl implements QueueControl
 {
@@ -179,6 +179,21 @@ public class QueueControlImpl extends AbstractControl implements QueueControl
       try
       {
          return queue.getMessageCount();
+      }
+      finally
+      {
+         blockOnIO();
+      }
+   }
+
+   public long getMessageCountNonBlocking()
+   {
+      checkStarted();
+
+      clearIO();
+      try
+      {
+         return queue.getMessageCountNonBlocking();
       }
       finally
       {
