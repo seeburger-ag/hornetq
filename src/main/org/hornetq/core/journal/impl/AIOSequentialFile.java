@@ -25,18 +25,17 @@ import org.hornetq.core.asyncio.impl.AsynchronousFileImpl;
 import org.hornetq.core.journal.IOAsyncTask;
 import org.hornetq.core.journal.SequentialFile;
 import org.hornetq.core.journal.SequentialFileFactory;
-import org.hornetq.core.logging.Logger;
 
 /**
- * 
+ *
  * A AIOSequentialFile
- * 
+ *
  * @author <a href="mailto:clebert.suconic@jboss.com">Clebert Suconic</a>
  *
  */
 public class AIOSequentialFile extends AbstractSequentialFile implements IOExceptionListener
 {
-   private static final Logger log = Logger.getLogger(AIOSequentialFile.class);
+   // private static final Logger log = Logger.getLogger(AIOSequentialFile.class);
 
    private boolean opened = false;
 
@@ -189,13 +188,14 @@ public class AIOSequentialFile extends AbstractSequentialFile implements IOExcep
 
       aioFile = new AsynchronousFileImpl(useExecutor ? writerExecutor : null, pollerExecutor, this);
 
+      final String absolutePath = getFile().getAbsolutePath();
       try
       {
-         aioFile.open(getFile().getAbsolutePath(), maxIO);
+         aioFile.open(absolutePath, maxIO);
       }
       catch (HornetQException e)
       {
-         factory.onIOError(HornetQException.IO_ERROR, e.getMessage(), this);
+         factory.onIOError(HornetQException.IO_ERROR, "AIOSequentialFile - Error opening file=" + absolutePath, e, this);
          throw e;
       }
 
@@ -262,13 +262,13 @@ public class AIOSequentialFile extends AbstractSequentialFile implements IOExcep
    // -----------------------------------------------------------------------------------------------------
 
    /* (non-Javadoc)
-    * @see org.hornetq.core.asyncio.IOExceptionListener#onException(int, java.lang.String)
+    * @see org.hornetq.core.asyncio.IOExceptionListener#onException
     */
-   public void onIOException(int code, String message)
+   public void onIOException(int code, String message, Throwable cause)
    {
-      factory.onIOError(code, message, this);
+      factory.onIOError(code, message, cause, this);
    }
-   
+
 
    public void writeDirect(final ByteBuffer bytes, final boolean sync) throws Exception
    {
@@ -287,7 +287,7 @@ public class AIOSequentialFile extends AbstractSequentialFile implements IOExcep
    }
 
    /**
-    * 
+    *
     * @param sync Not used on AIO
     *  */
    public void writeDirect(final ByteBuffer bytes, final boolean sync, final IOAsyncTask callback)
@@ -332,5 +332,5 @@ public class AIOSequentialFile extends AbstractSequentialFile implements IOExcep
          throw new IllegalStateException("File not opened");
       }
    }
-   
+
 }

@@ -29,9 +29,9 @@ import org.hornetq.core.journal.SequentialFileFactory;
 import org.hornetq.core.logging.Logger;
 
 /**
- * 
+ *
  * A NIOSequentialFile
- * 
+ *
  * @author <a href="mailto:tim.fox@jboss.com">Tim Fox</a>
  * @author <a href="mailto:clebert.suconic@jboss.com">Clebert Suconic</a>
  *
@@ -97,14 +97,14 @@ public class NIOSequentialFile extends AbstractSequentialFile
       try
       {
          rfile = new RandomAccessFile(getFile(), "rw");
-   
+
          channel = rfile.getChannel();
-   
+
          fileSize = channel.size();
       }
       catch (IOException e)
       {
-         factory.onIOError(HornetQException.IO_ERROR, e.getMessage(), this);
+         factory.onIOError(HornetQException.IO_ERROR, "NIOSequentialFile - Error accessing file=" + getFileName(), e, this);
          throw e;
       }
 
@@ -207,8 +207,8 @@ public class NIOSequentialFile extends AbstractSequentialFile
          {
             callback.onError(HornetQException.IO_ERROR, e.getLocalizedMessage());
          }
-         
-         factory.onIOError(HornetQException.IO_ERROR, e.getMessage(), this);
+
+         factory.onIOError(HornetQException.IO_ERROR, "NIOSequentialFile - Error reading from file=" + getFileName(), e, this);
 
          throw e;
       }
@@ -320,7 +320,7 @@ public class NIOSequentialFile extends AbstractSequentialFile
          }
          catch (IOException e)
          {
-            factory.onIOError(HornetQException.IO_ERROR, e.getMessage(), this);
+            factory.onIOError(HornetQException.IO_ERROR, "NIOSequentialFile - Error doing internal write. File=" + getFileName(), e, this);
          }
       }
       else
@@ -341,7 +341,7 @@ public class NIOSequentialFile extends AbstractSequentialFile
                   catch (IOException e)
                   {
                      NIOSequentialFile.log.warn("Exception on submitting write", e);
-                     factory.onIOError(HornetQException.IO_ERROR, e.getMessage(), NIOSequentialFile.this);
+                     factory.onIOError(HornetQException.IO_ERROR, "NIOSequentialFile - Error on internal write. File=" + getFileName(), e, NIOSequentialFile.this);
                      callback.onError(HornetQException.IO_ERROR, e.getMessage());
                   }
                   catch (Throwable e)

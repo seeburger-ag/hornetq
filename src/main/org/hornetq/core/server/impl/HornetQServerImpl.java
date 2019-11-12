@@ -237,7 +237,7 @@ public class HornetQServerImpl implements HornetQServer
    private Thread backupActivationThread;
 
    private Activation activation;
-   
+
    private final ShutdownOnCriticalErrorListener shutdownOnCriticalIO = new ShutdownOnCriticalErrorListener();
 
    // Constructors
@@ -467,7 +467,7 @@ public class HornetQServerImpl implements HornetQServer
    {
       stop(failoverOnServerShutdown, false);
    }
-   
+
    protected void stop(boolean failoverOnServerShutdown, boolean criticalIOError) throws Exception
    {
       synchronized (this)
@@ -517,7 +517,7 @@ public class HornetQServerImpl implements HornetQServer
             log.warn(e.getMessage(), e);
          }
       }
-      
+
       storageManager.clearContext();
 
       synchronized (this)
@@ -623,9 +623,9 @@ public class HornetQServerImpl implements HornetQServer
          {
             // Ignore
          }
-         
+
          securityStore.stop();
- 
+
          threadPool = null;
 
          scheduledPool = null;
@@ -778,7 +778,7 @@ public class HornetQServerImpl implements HornetQServer
    {
       return started;
    }
-   
+
    public boolean isStopped()
    {
       return stopped;
@@ -1008,15 +1008,15 @@ public class HornetQServerImpl implements HornetQServer
       {
          storageManager.deleteQueueBinding(queue.getID());
       }
-      
+
 
       if (queue.getPageSubscription() != null)
       {
          queue.getPageSubscription().close();
       }
-      
+
       PageSubscription subs = queue.getPageSubscription();
-      
+
       if (subs != null)
       {
          subs.cleanupEntries(true);
@@ -1196,7 +1196,7 @@ public class HornetQServerImpl implements HornetQServer
          return "HornetQServerImpl::" + (nodeManager != null ? "serverUUID=" + nodeManager.getUUID() : "");
       }
    }
-   
+
    /**
     * For tests only, don't use this method as it's not part of the API
     * @param factory
@@ -1230,8 +1230,8 @@ public class HornetQServerImpl implements HornetQServer
                                    addressSettingsRepository);
    }
 
-   /** 
-    * This method is protected as it may be used as a hook for creating a custom storage manager (on tests for instance) 
+   /**
+    * This method is protected as it may be used as a hook for creating a custom storage manager (on tests for instance)
     */
    protected StorageManager createStorageManager()
    {
@@ -1732,7 +1732,7 @@ public class HornetQServerImpl implements HornetQServer
          pageSubscription.close();
          throw e;
       }
-      
+
 
       managementService.registerAddress(address);
       managementService.registerQueue(queue, address, storageManager);
@@ -2001,7 +2001,7 @@ public class HornetQServerImpl implements HornetQServer
       }
 
       /**
-       * 
+       *
        */
       public void close(boolean permanently) throws Exception
       {
@@ -2044,19 +2044,19 @@ public class HornetQServerImpl implements HornetQServer
          }
       }
    }
-   
+
    private class ShutdownOnCriticalErrorListener implements IOCriticalErrorListener
    {
       boolean failedAlready = false;
-      
-      public synchronized void onIOException(int code, String message, SequentialFile file)
+
+      public synchronized void onIOException(int code, String message, Throwable cause, SequentialFile file)
       {
          if (!failedAlready)
          {
             failedAlready = true;
-            
-            log.warn("Critical IO Error, shutting down the server. code=" + code + ", message=" + message);
-            
+
+            log.fatal("Critical IO Error, shutting down the server. code=" + code + ", message=" + message + ", file=" + file, cause);
+
             new Thread()
             {
                public void run()
@@ -2133,7 +2133,7 @@ public class HornetQServerImpl implements HornetQServer
 
       }
    }
-   
+
    /** This seems duplicate code all over the place, but for security reasons we can't let something like this to be open in a
     *  utility class, as it would be a door to load anything you like in a safe VM.
     *  For that reason any class trying to do a privileged block should do with the AccessController directly.

@@ -13,6 +13,7 @@
 
 package org.hornetq.core.asyncio.impl;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 import java.util.PriorityQueue;
@@ -34,9 +35,9 @@ import org.hornetq.core.logging.Logger;
 import org.hornetq.utils.ReusableLatch;
 
 /**
- * 
+ *
  * AsynchronousFile implementation
- * 
+ *
  * @author clebert.suconic@jboss.com
  * Warning: Case you refactor the name or the package of this class
  *          You need to make sure you also rename the C++ native calls
@@ -62,7 +63,7 @@ public class AsynchronousFileImpl implements AsynchronousFile
     *  This is accessed from a single thread (the Poller Thread) */
    private long nextReadSequence = 0;
 
-   /** 
+   /**
     * AIO can't guarantee ordering over callbacks.
     * We use thie PriorityQueue to hold values until they are in order
     */
@@ -161,7 +162,7 @@ public class AsynchronousFileImpl implements AsynchronousFile
    private Semaphore maxIOSemaphore;
 
    private BufferCallback bufferCallback;
-   
+
    /** A callback for IO errors when they happen */
    private final IOExceptionListener ioExceptionListener;
 
@@ -282,8 +283,8 @@ public class AsynchronousFileImpl implements AsynchronousFile
          writeLock.unlock();
       }
    }
-   
-   
+
+
    public void writeInternal(long positionToWrite, long size, ByteBuffer bytes) throws HornetQException
    {
       try
@@ -292,7 +293,7 @@ public class AsynchronousFileImpl implements AsynchronousFile
       }
       catch (HornetQException e)
       {
-         fireExceptionListener(e.getCode(), e.getMessage());
+         fireExceptionListener(e.getCode(), e.getMessage(), e);
          throw e;
       }
       if (bufferCallback != null)
@@ -336,7 +337,7 @@ public class AsynchronousFileImpl implements AsynchronousFile
                }
                catch (HornetQException e)
                {
-                  callbackError(aioCallback, sequence, directByteBuffer, e.getCode(), e.getMessage());
+                  callbackError(aioCallback, sequence, directByteBuffer, e.getCode(), e.getMessage(), e);
                }
                catch (RuntimeException e)
                {
@@ -344,7 +345,8 @@ public class AsynchronousFileImpl implements AsynchronousFile
                                 sequence,
                                 directByteBuffer,
                                 HornetQException.INTERNAL_ERROR,
-                                e.getMessage());
+                                e.getMessage(),
+                                e);
                }
             }
          });
@@ -361,11 +363,11 @@ public class AsynchronousFileImpl implements AsynchronousFile
          }
          catch (HornetQException e)
          {
-            callbackError(aioCallback, sequence, directByteBuffer, e.getCode(), e.getMessage());
+            callbackError(aioCallback, sequence, directByteBuffer, e.getCode(), e.getMessage(), e);
          }
          catch (RuntimeException e)
          {
-            callbackError(aioCallback, sequence, directByteBuffer, HornetQException.INTERNAL_ERROR, e.getMessage());
+            callbackError(aioCallback, sequence, directByteBuffer, HornetQException.INTERNAL_ERROR, e.getMessage(), e);
          }
       }
 
@@ -426,7 +428,7 @@ public class AsynchronousFileImpl implements AsynchronousFile
    }
 
    /**
-    * This needs to be synchronized because of 
+    * This needs to be synchronized because of
     * http://bugs.sun.com/view_bug.do?bug_id=6791815
     * http://mail.openjdk.java.net/pipermail/hotspot-runtime-dev/2009-January/000386.html
     */
@@ -539,9 +541,19 @@ public class AsynchronousFileImpl implements AsynchronousFile
                               final int errorCode,
                               final String errorMessage)
    {
+      callbackError(callback, sequence, buffer, errorCode, errorMessage, new IOException("Exception in native AIO layer."));
+   }
+
+   private void callbackError(final AIOCallback callback,
+                                 final long sequence,
+                                 final ByteBuffer buffer,
+                                 final int errorCode,
+                                 final String errorMessage,
+                                 Throwable cause)
+      {
       AsynchronousFileImpl.log.warn("CallbackError: " + errorMessage);
-      
-      fireExceptionListener(errorCode, errorMessage);
+
+      fireExceptionListener(errorCode, errorMessage, cause);
 
       maxIOSemaphore.release();
 
@@ -585,11 +597,11 @@ public class AsynchronousFileImpl implements AsynchronousFile
     * @param errorCode
     * @param errorMessage
     */
-   private void fireExceptionListener(final int errorCode, final String errorMessage)
+   private void fireExceptionListener(final int errorCode, final String errorMessage, Throwable cause)
    {
       if (ioExceptionListener != null)
       {
-         ioExceptionListener.onIOException(errorCode, errorMessage);
+         ioExceptionListener.onIOException(errorCode, errorMessage, cause);
       }
    }
 
@@ -648,7 +660,7 @@ public class AsynchronousFileImpl implements AsynchronousFile
       // completely done, or we might get beautiful GPFs
       pollerLatch.await();
    }
-   
+
    public static FileLock lock(int handle)
    {
       if (flock(handle))
@@ -662,13 +674,13 @@ public class AsynchronousFileImpl implements AsynchronousFile
    }
 
    // Native ----------------------------------------------------------------------------
-   
-   
+
+
    // Functions used for locking files .....
    public static native int openFile(String fileName);
-   
+
    public static native void closeFile(int handle);
-   
+
    private static native boolean flock(int handle);
    // Functions used for locking files ^^^^^^^^
 

@@ -22,5 +22,5 @@ package org.hornetq.core.asyncio;
  */
 public interface IOExceptionListener
 {
-   void onIOException(int code, String message);
+   void onIOException(int code, String message, Throwable cause);
 }
