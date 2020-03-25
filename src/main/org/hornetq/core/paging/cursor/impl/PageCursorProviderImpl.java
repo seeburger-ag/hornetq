@@ -248,14 +248,14 @@ public class PageCursorProviderImpl implements PageCursorProvider
       {
          cursor.processReload();
       }
-      
+
       if (!cursorList.isEmpty())
       {
          // https://issues.jboss.org/browse/JBPAPP-10338 if you ack out of order,
          // the min page could be beyond the first page.
-         // we have to reload any previously acked message 
+         // we have to reload any previously acked message
          long cursorsMinPage = checkMinPage(cursorList);
-         
+
          // checkMinPage will return MaxValue if there aren't any pages or any cursors
          if (cursorsMinPage != Long.MAX_VALUE)
          {
@@ -368,7 +368,7 @@ public class PageCursorProviderImpl implements PageCursorProvider
          }
          catch (Exception e)
          {
-            log.warn("Error while cleaning paging on queue " + sub.getQueue().getName(), e);
+            log.warn("Error while cleaning paging on queue " + (sub.getQueue() != null ? sub.getQueue().getName() : "not set"), e);
          }
       }
 

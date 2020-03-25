@@ -115,6 +115,9 @@ public class JournalStorageManager implements StorageManager
 {
    private static final Logger log = Logger.getLogger(JournalStorageManager.class);
 
+   // SEE [Feature #95116] [Bug#93230] Paging
+   public static final boolean PAGING_CLEANUP = Boolean.getBoolean("org.hornetq.paging.cleanup");
+
    private static final long CHECKPOINT_BATCH_SIZE = Integer.MAX_VALUE;
 
    // grouping journal record type
@@ -1200,7 +1203,13 @@ public class JournalStorageManager implements StorageManager
 
                PageSubscription sub = locateSubscription(encoding.queueID, pageSubscriptions, queueInfos, pagingManager);
 
-               if (sub != null)
+               // SEE [Feature #95116] [Bug#93230] Paging
+               if (PAGING_CLEANUP)
+               {
+                  log.info("Deleting paging counter for queueID=" + encoding.queueID + " while reloading PAGE_CURSOR_COUNTER_VALUE");
+                  messageJournal.appendDeleteRecord(record.id, false);
+               }
+               else if (sub != null)
                {
                   sub.getCounter().loadValue(record.id, encoding.value);
                }
@@ -1221,7 +1230,13 @@ public class JournalStorageManager implements StorageManager
 
                PageSubscription sub = locateSubscription(encoding.queueID, pageSubscriptions, queueInfos, pagingManager);
 
-               if (sub != null)
+               // SEE [Feature #95116] [Bug#93230] Paging
+               if (PAGING_CLEANUP)
+               {
+                  log.info("Deleting paging counter for queueID=" + encoding.queueID + " while reloading PAGE_CURSOR_COUNTER_INC");
+                  messageJournal.appendDeleteRecord(record.id, false);
+               }
+               else if (sub != null)
                {
                   sub.getCounter().loadInc(record.id, encoding.value);
                }
@@ -2041,7 +2056,7 @@ public class JournalStorageManager implements StorageManager
                                                             pageSubscriptions,
                                                             queueInfos,
                                                             pagingManager);
-                  
+
 
                   if (sub != null)
                   {

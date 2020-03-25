@@ -16,7 +16,6 @@ package org.hornetq.core.paging.cursor.impl;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -932,7 +931,7 @@ public class PageSubscriptionImpl implements PageSubscription
          {
             if (isTrace)
             {
-               log.trace("Scheduling cleanup on pageSubscription for address = " + pageStore.getAddress() + " queue = " + this.getQueue().getName());
+               log.trace("Scheduling cleanup on pageSubscription for address = " + pageStore.getAddress() + " queue = " + (this.getQueue() != null ? this.getQueue().getName() : "not set"));
             }
 
             // there's a different page being acked, we will do the check right away
@@ -1402,7 +1401,7 @@ public class PageSubscriptionImpl implements PageSubscription
                   {
                      log.warn("Couldn't locate page transaction " + message.getPagedMessage().getTransactionID() +
                               ", ignoring message on position " +
-                              message.getPosition() + " on address=" + pageStore.getAddress() + " queue=" + queue.getName());
+                              message.getPosition() + " on address=" + pageStore.getAddress() + " queue=" + (queue != null ? queue.getName() : "not set"));
                      valid = false;
                      ignored = true;
                   }

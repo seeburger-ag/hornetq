@@ -63,7 +63,9 @@ import org.hornetq.core.journal.impl.SyncSpeedTest;
 import org.hornetq.core.logging.Logger;
 import org.hornetq.core.management.impl.HornetQServerControlImpl;
 import org.hornetq.core.paging.PagingManager;
+import org.hornetq.core.paging.cursor.PageCursorProvider;
 import org.hornetq.core.paging.cursor.PageSubscription;
+import org.hornetq.core.paging.cursor.PagedReference;
 import org.hornetq.core.paging.impl.PagingManagerImpl;
 import org.hornetq.core.paging.impl.PagingStoreFactoryNIO;
 import org.hornetq.core.persistence.GroupingInfo;
@@ -124,6 +126,7 @@ import org.hornetq.spi.core.security.HornetQSecurityManager;
 import org.hornetq.utils.ClassloadingUtil;
 import org.hornetq.utils.ExecutorFactory;
 import org.hornetq.utils.HornetQThreadFactory;
+import org.hornetq.utils.LinkedListIterator;
 import org.hornetq.utils.OrderedExecutorFactory;
 import org.hornetq.utils.SecurityFormatter;
 import org.hornetq.utils.VersionLoader;
@@ -1542,6 +1545,12 @@ public class HornetQServerImpl implements HornetQServer
       Map<Long, Queue> queues = new HashMap<Long, Queue>();
       Map<Long, QueueBindingInfo> queueBindingInfosMap = new HashMap<Long, QueueBindingInfo>();
 
+      // SEE [Feature #95116] [Bug#93230] Paging
+      if (JournalStorageManager.PAGING_CLEANUP)
+      {
+         log.warn("PAGING_CLEANUP - Starting cleanup of existing paged messages on request of system property \"org.hornetq.paging.cleanup\"...");
+      }
+
       for (QueueBindingInfo queueBindingInfo : queueBindingInfos)
       {
          queueBindingInfosMap.put(queueBindingInfo.getId(), queueBindingInfo);
@@ -1552,17 +1561,52 @@ public class HornetQServerImpl implements HornetQServer
          {
             Filter filter = FilterImpl.createFilter(queueBindingInfo.getFilterString());
 
-            PageSubscription subscription = pagingManager.getPageStore(queueBindingInfo.getAddress())
-                                                         .getCursorProvier()
-                                                         .createSubscription(queueBindingInfo.getId(), filter, true);
+            PageCursorProvider cursorProvier = pagingManager.getPageStore(queueBindingInfo.getAddress()).getCursorProvier();
+            PageSubscription subscription = cursorProvier.createSubscription(queueBindingInfo.getId(), filter, true);
 
+            final SimpleString queueName = queueBindingInfo.getQueueName();
+
+            // SEE [Feature #95116] [Bug#93230] Paging
+            if (JournalStorageManager.PAGING_CLEANUP)
+            {
+               log.info("PAGING_CLEANUP - Destroying paging for queueID=" + queueBindingInfo.getId() + ", queueName= " + queueName);
+               int count = 0;
+               LinkedListIterator<PagedReference> pageIterator = subscription.iterator();
+               if (pageIterator != null)
+               {
+                  while (pageIterator.hasNext())
+                  {
+                     PagedReference reference = pageIterator.next();
+                     pageIterator.remove();
+
+                     subscription.ack(reference);
+                     count++;
+                  }
+               }
+               log.info("PAGING_CLEANUP - QueueName=" + queueName + " - deleted paged references: " + count);
+               subscription.destroy();
+               subscription.cleanupEntries(true);
+               cursorProvier.close(subscription);
+
+               subscription = cursorProvier.createSubscription(queueBindingInfo.getId(), filter, true);
+            }
+
+
+            log.debug("Creating queue " + queueName);
             Queue queue = queueFactory.createQueue(queueBindingInfo.getId(),
                                                    queueBindingInfo.getAddress(),
-                                                   queueBindingInfo.getQueueName(),
+                                                   queueName,
                                                    filter,
                                                    subscription,
                                                    true,
                                                    false);
+
+            // SEE [Feature #95116] [Bug#93230] Paging
+            if (JournalStorageManager.PAGING_CLEANUP)
+            {
+               int deletedPagingRefs = ((QueueImpl) queue).deletePagingReferences();
+               log.info("PAGING_CLEANUP - QueueName=" + queue.getName() + " - deleted queue paging references: " + deletedPagingRefs);
+            }
 
             Binding binding = new LocalQueueBinding(queueBindingInfo.getAddress(), queue, nodeManager.getNodeId());
 
@@ -1590,6 +1634,7 @@ public class HornetQServerImpl implements HornetQServer
 
       HashSet<Pair<Long, Long>> pendingLargeMessages = new HashSet<Pair<Long, Long>>();
 
+      // SEE [Feature #95116] [Bug#93230] Paging this loads the paging-counter
       journalInfo[1] = storageManager.loadMessageJournal(postOffice,
                                                          pagingManager,
                                                          resourceManager,

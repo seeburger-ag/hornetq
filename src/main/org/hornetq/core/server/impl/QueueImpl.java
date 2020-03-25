@@ -1141,6 +1141,47 @@ public class QueueImpl implements Queue
    }
 
 
+   /**
+    * SEE [Feature #95116] [Bug#93230] Paging
+    * Probably not really needed, since should not find references, but to be sure.
+    * Invoked by {@link org.hornetq.core.server.impl.HornetQServerImpl#loadJournals()}
+    * @return No. of deleted refs
+    * @throws Exception
+    */
+   public synchronized int deletePagingReferences() throws Exception
+   {
+      int count = 0;
+
+      Transaction tx = new TransactionImpl(storageManager);
+
+      LinkedListIterator<MessageReference> iter = iterator();
+      try
+      {
+         while (iter.hasNext())
+         {
+            MessageReference ref = iter.next();
+
+            if (ref.isPaged())
+            {
+               deliveringCount.incrementAndGet();
+               acknowledge(tx, ref);
+               iter.remove();
+               refRemoved(ref);
+               count++;
+            }
+         }
+
+         tx.commit();
+
+         return count;
+      }
+      finally
+      {
+         iter.close();
+      }
+   }
+
+
    public void destroyPaging() throws Exception
    {
 
