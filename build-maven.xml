@@ -14,7 +14,7 @@
 
 <project default="upload" name="HornetQ">
     <property name="hornetq.version.snapshot.suffix" value=""/>
-    <property name="hornetq.version" value="2.2.13.SEE18${hornetq.version.snapshot.suffix}"/>
+    <property name="hornetq.version" value="2.2.13.SEE19${hornetq.version.snapshot.suffix}"/>
    <property name="build.dir" value="build"/>
    <property name="jars.dir" value="${build.dir}/jars"/>
 
