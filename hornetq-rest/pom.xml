@@ -5,12 +5,13 @@
     <name>HornetQ REST Interface Parent POM</name>
     <groupId>org.hornetq.rest</groupId>
     <artifactId>hornetq-rest-all</artifactId>
-    <version>2.2.14.Final</version>
+    <version>2.2.6.Final</version>
     <packaging>pom</packaging>
 
     <properties>
         <resteasy.version>2.0.1.GA</resteasy.version>
-        <hornetq.version>2.2.snapshot</hornetq.version>
+        <hornetq.version.snapshot.suffix></hornetq.version.snapshot.suffix>
+        <hornetq.version>2.2.14.SEE1-SNAPSHOT</hornetq.version>
     </properties>
 
     <licenses>
@@ -23,9 +24,9 @@
 
     <distributionManagement>
         <repository>
-            <id>jboss-releases-repository</id>
-            <name>JBoss Releases Repository</name>
-            <url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</url>
+            <id>release</id>
+            <name>SEE Release Repository</name>
+            <url>https://repo.seeburger.de/archiva/repository/release/</url>
         </repository>
     </distributionManagement>
 
@@ -57,12 +58,12 @@
             </dependency>
 
             <dependency>
-                <groupId>org.hornetq</groupId>
+                <groupId>com.seeburger.as</groupId>
                 <artifactId>hornetq-core</artifactId>
                 <version>${hornetq.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hornetq</groupId>
+                <groupId>com.seeburger.as</groupId>
                 <artifactId>hornetq-jms</artifactId>
                 <version>${hornetq.version}</version>
             </dependency>
@@ -203,8 +204,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
+                    <source>1.7</source>
+                    <target>1.7</target>
                 </configuration>
             </plugin>
             <plugin>

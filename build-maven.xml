@@ -13,9 +13,13 @@
   -->
 
 <project default="upload" name="HornetQ">
-   <property name="hornetq.version" value="2.2.14.Final"/>
+    <property name="hornetq.version.snapshot.suffix" value=""/>
+    <property name="hornetq.version" value="2.2.14.SEE1${hornetq.version.snapshot.suffix}"/>
    <property name="build.dir" value="build"/>
    <property name="jars.dir" value="${build.dir}/jars"/>
+
+    <property name="jboss.snapshots.repo.url" value="dav:https://snapshots.jboss.org/maven2" />
+    <property name="jboss.releases.repo.url" value="https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/" />
 
    <condition property="maven.executable" value="mvn.bat" else="mvn">
       <os family="windows"/>
@@ -83,35 +87,35 @@
          <param name="artifact.type" value="jar"/>
       </antcall>
    </target>
-	
-	
-	<target name="upload-snapshot">
-		<antcall target="uploadHornetQBootstrap"/>
-		
-		<antcall target="uploadHornetQCore"/>
-		
-		<antcall target="uploadHornetQLogging"/>
-		
-		<antcall target="uploadHornetQTransports"/>
-		
-		<antcall target="uploadHornetQCoreClient"/>
-		
-		<antcall target="uploadHornetQJms"/>
-		
-		<antcall target="uploadHornetQJmsClient"/>
-		
-		<antcall target="uploadHornetQSecurity"/>
-		
-		<antcall target="uploadHornetQRa"/>
-		
-		<antcall target="uploadHornetQResources"/>
-	</target>
+
+
+   <target name="upload-snapshot">
+      <antcall target="uploadHornetQBootstrap"/>
+
+      <antcall target="uploadHornetQCore"/>
+
+      <antcall target="uploadHornetQLogging"/>
+
+      <antcall target="uploadHornetQTransports"/>
+
+      <antcall target="uploadHornetQCoreClient"/>
+
+      <antcall target="uploadHornetQJms"/>
+
+      <antcall target="uploadHornetQJmsClient"/>
+
+      <antcall target="uploadHornetQSecurity"/>
+
+      <antcall target="uploadHornetQRa"/>
+
+      <antcall target="uploadHornetQResources"/>
+   </target>
 
 
    <target name="install">
       <antcall target="upload-local-target">
           <param name="artifact.id" value="hornetq-resources"/>
-      	  <param name="file-name" value="hornetq-resources"/>
+           <param name="file-name" value="hornetq-resources"/>
       </antcall>
 
       <antcall target="upload-local-target">
@@ -120,10 +124,9 @@
       </antcall>
 
 
-      <!-- we upload the JDK1.5 version since that should be compatible with both JDK 1.6 and 1.5 -->
       <antcall target="upload-local-target">
         <param name="artifact.id" value="hornetq-jms-client"/>
-        <param name="file-name" value="hornetq-jms-client-java5"/>
+        <param name="file-name" value="hornetq-jms-client"/>
       </antcall>
 
       <antcall target="upload-local-target">
@@ -141,10 +144,9 @@
         <param name="file-name" value="hornetq-bootstrap"/>
       </antcall>
 
-      <!-- we upload the JDK1.5 version since that should be compatible with both JDK 1.6 and 1.5 -->
       <antcall target="upload-local-target">
           <param name="artifact.id" value="hornetq-core-client"/>
-        <param name="file-name" value="hornetq-core-client-java5"/>
+        <param name="file-name" value="hornetq-core-client"/>
       </antcall>
 
       <antcall target="upload-local-target">
@@ -166,20 +168,24 @@
 
    <target name="upload-local-target">
        <!-- install the jar -->
+       <echo level="info">Installing file=./jars/${file-name}.jar</echo>
        <exec executable="${maven.executable}" dir="./build">
         <arg value="install:install-file"/>
+        <arg value="-e"/>
         <!-- uncomment the following line to deploy to the JBoss 5 repository -->
         <!-- <arg value="-Dmaven.repo.local=/work/eap-51/maven-repository"/> -->
-        <arg value="-DgroupId=org.hornetq"/>
+        <arg value="-DgroupId=com.seeburger.as"/>
         <arg value="-DartifactId=${artifact.id}"/>
         <arg value="-Dversion=${hornetq.version}"/>
         <arg value="-Dpackaging=jar"/>
         <arg value="-Dfile=./jars/${file-name}.jar"/>
        </exec>
        <!-- install the sources jar -->
+       <echo level="info">Installing file=./jars/${file-name}-sources.jar</echo>
        <exec executable="${maven.executable}" dir="./build">
         <arg value="install:install-file"/>
-        <arg value="-DgroupId=org.hornetq"/>
+        <arg value="-e"/>
+        <arg value="-DgroupId=com.seeburger.as"/>
         <!-- uncomment the following line to deploy to the JBoss 5 repository -->
         <!-- arg value="-Dmaven.repo.local=/work/eap/maven-repository"/ -->
         <arg value="-DartifactId=${artifact.id}"/>
@@ -191,38 +197,44 @@
    </target>
 
    <target name="upload">
-   	<!-- upload the jar -->
+      <!-- upload the jar -->
+       <echo level="info">Uploading file=${jars.dir}/${artifact.id}.${artifact.type}</echo>
       <exec executable="${maven.executable}">
          <arg value="deploy:deploy-file"/>
-      	 <arg value="-e"/>
-         <arg value="-DgroupId=org.hornetq"/>
+         <arg value="-e"/>
+         <arg value="-s"/>
+         <arg value="${user.home}/.m2/settings-jboss.xml"/>
+         <arg value="-DgroupId=com.seeburger.as"/>
          <arg value="-DartifactId=${artifact.id}"/>
          <arg value="-Dversion=${hornetq.version}"/>
          <arg value="-Dpackaging=${artifact.type}"/>
          <arg value="-DgeneratePom=true"/>
          <arg value="-Dfile=${jars.dir}/${artifact.id}.${artifact.type}"/>
-         <arg value="-DrepositoryId=snapshots.jboss.org"/>
-         <arg value="-Durl=dav:https://snapshots.jboss.org/maven2"/>
+         <arg value="-DrepositoryId=snapshot"/>
+         <arg value="-Durl=${jboss.snapshots.repo.url}"/>
       </exec>
       <!-- upload the corresponding sources jar -->
+       <echo level="info">Uploading file=${jars.dir}/${artifact.id}-sources.${artifact.type}</echo>
       <exec executable="${maven.executable}">
          <arg value="deploy:deploy-file"/>
-      	 <arg value="-e"/>
-         <arg value="-DgroupId=org.hornetq"/>
+         <arg value="-e"/>
+         <arg value="-s"/>
+         <arg value="${user.home}/.m2/settings-jboss.xml"/>
+         <arg value="-DgroupId=com.seeburger.as"/>
          <arg value="-DartifactId=${artifact.id}"/>
          <arg value="-Dversion=${hornetq.version}"/>
          <arg value="-Dpackaging=${artifact.type}"/>
          <arg value="-DgeneratePom=true"/>
          <arg value="-Dclassifier=sources"/>
          <arg value="-Dfile=${jars.dir}/${artifact.id}-sources.${artifact.type}"/>
-         <arg value="-DrepositoryId=snapshots.jboss.org"/>
-         <arg value="-Durl=dav:https://snapshots.jboss.org/maven2"/>
+         <arg value="-DrepositoryId=snapshot"/>
+         <arg value="-Durl=${jboss.snapshots.repo.url}"/>
       </exec>
    </target>
 
    <target name="deploy">
-   	
-   	
+
+
     <antcall target="deploy-jar">
         <param name="artifact.id" value="hornetq-resources"/>
         <param name="file-name" value="hornetq-resources"/>
@@ -233,10 +245,9 @@
         <param name="file-name" value="hornetq-jms"/>
     </antcall>
 
-    <!-- we upload the JDK1.5 version since that should be compatible with both JDK 1.6 and 1.5 -->
     <antcall target="deploy-jar">
         <param name="artifact.id" value="hornetq-jms-client"/>
-        <param name="file-name" value="hornetq-jms-client-java5"/>
+        <param name="file-name" value="hornetq-jms-client"/>
     </antcall>
 
     <antcall target="deploy-jar">
@@ -253,11 +264,10 @@
         <param name="artifact.id" value="hornetq-bootstrap"/>
         <param name="file-name" value="hornetq-bootstrap"/>
     </antcall>
- 
-    <!-- we upload the JDK1.5 version since that should be compatible with both JDK 1.6 and 1.5 -->
+
     <antcall target="deploy-jar">
         <param name="artifact.id" value="hornetq-core-client"/>
-        <param name="file-name" value="hornetq-core-client-java5"/>
+        <param name="file-name" value="hornetq-core-client"/>
     </antcall>
 
     <antcall target="deploy-jar">
@@ -278,11 +288,11 @@
    </target>
 
    <target  name="deploy-jar">
-   	  <tempfile property="temporary.pom" prefix="pom" suffix=".xml"/>
+        <tempfile property="temporary.pom" prefix="pom" suffix=".xml"/>
       <echo file="${temporary.pom}"
             message="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;project&gt;${line.separator}
  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;${line.separator}
- &lt;groupId&gt;org.hornetq&lt;/groupId&gt;${line.separator}
+ &lt;groupId&gt;com.seeburger.as&lt;/groupId&gt;${line.separator}
  &lt;artifactId&gt;${artifact.id}&lt;/artifactId&gt;${line.separator}
  &lt;version&gt;${hornetq.version}&lt;/version&gt;${line.separator}
   &lt;name&gt;HornetQ&lt;/name&gt;${line.separator}
@@ -307,40 +317,46 @@
       &lt;/developer&gt;${line.separator}
    &lt;/developers&gt;${line.separator}
    &lt;scm&gt;${line.separator}
-      &lt;connection&gt;scm:svn:http://anonsvn.jboss.org/repos/hornetq/trunk&lt;/connection&gt;${line.separator}
-      &lt;developerConnection&gt;scm:svn:https://svn.jboss.org/repos/hornetq/trunk&lt;/developerConnection&gt;${line.separator}
-      &lt;url&gt;http://fisheye.jboss.org/browse/hornetq&lt;/url&gt;${line.separator}
+      &lt;connection&gt;scm:git:git@github.com:seeburger-ag/hornetq.git&lt;/connection&gt;${line.separator}
+      &lt;developerConnection&gt;scm:git:git@github.com:seeburger-ag/hornetq.git&lt;/developerConnection&gt;${line.separator}
+      &lt;url&gt;https://github.com/seeburger-ag/hornetq&lt;/url&gt;${line.separator}
    &lt;/scm&gt;${line.separator}
  &lt;/project&gt;"/>
-   	
+
+    <echo level="info">Deploying file=./build/jars/${file-name}.jar</echo>
     <!-- deploy the jar -->
     <exec executable="${maven.executable}">
      <arg value="-e"/>
+     <arg value="-s"/>
+     <arg value="${user.home}/.m2/settings-jboss.xml"/>
      <arg value="deploy:deploy-file"/>
      <arg value="-DpomFile=${temporary.pom}"/>
-     <arg value="-DgroupId=org.hornetq"/>
+     <arg value="-DgroupId=com.seeburger.as"/>
      <arg value="-DartifactId=${artifact.id}"/>
      <arg value="-Dversion=${hornetq.version}"/>
      <arg value="-Dpackaging=jar"/>
      <arg value="-Dfile=./build/jars/${file-name}.jar"/>
-     <arg value="-DrepositoryId=jboss-releases-repository"/>
-     <arg value="-Durl=https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/"/>
+     <arg value="-DrepositoryId=release"/>
+     <arg value="-Durl=${jboss.releases.repo.url}"/>
     </exec>
     <!-- deploy the sources jar -->
+    <echo level="info">Deploying file=./build/jars/${file-name}-sources.jar</echo>
     <exec executable="${maven.executable}">
      <arg value="-e"/>
+     <arg value="-s"/>
+     <arg value="${user.home}/.m2/settings-jboss.xml"/>
      <arg value="deploy:deploy-file"/>
      <arg value="-DpomFile=${temporary.pom}"/>
-     <arg value="-DgroupId=org.hornetq"/>
+     <arg value="-DgroupId=com.seeburger.as"/>
      <arg value="-DartifactId=${artifact.id}"/>
      <arg value="-Dversion=${hornetq.version}"/>
      <arg value="-Dpackaging=jar"/>
      <arg value="-Dclassifier=sources"/>
      <arg value="-Dfile=./build/jars/${file-name}-sources.jar"/>
-     <arg value="-DrepositoryId=jboss-releases-repository"/>
-     <arg value="-Durl=https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/"/>
-    </exec>   	
-    
+     <arg value="-DrepositoryId=release"/>
+     <arg value="-Durl=${jboss.releases.repo.url}"/>
+    </exec>
+
     <delete file="${temporary.pom}"/>
 
    </target>

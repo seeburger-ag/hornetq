@@ -9,17 +9,17 @@ Copyright 2009 Red Hat, Inc.
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
  implied.  See the License for the specific language governing
- permissions and limitations under the License.  
+ permissions and limitations under the License.
   -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
    <modelVersion>4.0.0</modelVersion>
-   <groupId>org.hornetq</groupId>
+   <groupId>com.seeburger.as</groupId>
    <artifactId>messaging</artifactId>
    <packaging>pom</packaging>
-   <version>2.2.14.Final</version>
+   <version>2.2.14.SEE1-SNAPSHOT</version>
 
     <properties>
         <resteasy.version>2.1.0.GA</resteasy.version>
@@ -36,16 +36,19 @@ Copyright 2009 Red Hat, Inc.
       <url>http://www.jboss.org/</url>
    </organization>
 
-   <scm>
-      <connection>scm:svn:http://anonsvn.jboss.org/repos/messaging/trunk</connection>
-      <developerConnection>scm:svn:https://svn.jboss.org/repos/messaging/trunk</developerConnection>
-   </scm>
+    <scm>
+        <connection>scm:git:git@github.com:seeburger-ag/hornetq.git</connection>
+        <developerConnection>scm:git:git@github.com:seeburger-ag/hornetq.git</developerConnection>
+        <url>https://github.com/seeburger-ag/hornetq</url>
+    </scm>
+
    <build>
 
       <plugins>
          <plugin>
             <groupId>org.jboss.maven.plugins</groupId>
             <artifactId>maven-buildmagic-thirdparty-plugin</artifactId>
+            <version>2.2.1.Final</version>
             <executions>
                <execution>
                   <id>build-thirdparty</id>
@@ -134,7 +137,7 @@ Copyright 2009 Red Hat, Inc.
                <dependency>
                   <groupId>sun.jdk</groupId>
                   <artifactId>tools</artifactId>
-                  <version>1.5</version>
+                  <version>1.7</version>
                   <scope>system</scope>
                   <systemPath>${java.home}/../lib/tools.jar</systemPath>
                </dependency>
@@ -290,14 +293,14 @@ Copyright 2009 Red Hat, Inc.
         <artifactId>commons-logging</artifactId>
         <version>1.1.0.jboss</version>
       </dependency>
-      
+
       <!-- needed for javaee examples-->
       <dependency>
         <groupId>org.jboss.ejb3</groupId>
         <artifactId>jboss-ejb3-ext-api</artifactId>
         <version>1.0.0</version>
       </dependency>
-      
+
      <!-- needed for javadoc graphics-->
       <dependency>
         <groupId>org.jboss.apiviz</groupId>
@@ -358,7 +361,7 @@ Copyright 2009 Red Hat, Inc.
          <name>JBoss releases</name>
          <url>https://repository.jboss.org/nexus/content/groups/public</url>
       </pluginRepository>
-   </pluginRepositories>                     
+   </pluginRepositories>
    <!--<profiles>
       --><!-- This profile is used by the ant/buildmagic build --><!--
       <profile>
