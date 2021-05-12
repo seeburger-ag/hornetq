@@ -228,9 +228,13 @@ public class PageSubscriptionImpl implements PageSubscription
       final ArrayList<PageCursorInfo> completedPages = new ArrayList<PageCursorInfo>();
 
       // First get the completed pages using a lock
-      synchronized (this)
+      synchronized (consumedPages)
       {
-         for (Entry<Long, PageCursorInfo> entry : consumedPages.entrySet()) 
+         if (lastAckedPosition == null) {
+            return;
+         }
+
+         for (Entry<Long, PageCursorInfo> entry : consumedPages.entrySet())
          {
             PageCursorInfo info = entry.getValue();
             if (info.isDone() && !info.isPendingDelete() && lastAckedPosition != null)
@@ -279,7 +283,7 @@ public class PageSubscriptionImpl implements PageSubscription
 
                public void run()
                {
-                  synchronized (PageSubscriptionImpl.this)
+                  synchronized (consumedPages)
                   {
                      for (PageCursorInfo completePage : completedPages)
                      {
@@ -384,42 +388,45 @@ public class PageSubscriptionImpl implements PageSubscription
    /**
     * 
     */
-   private synchronized PagePosition getStartPosition()
+   private PagePosition getStartPosition()
    {
-      // Get the first page not marked for deletion
-      // It's important to verify if it's not marked for deletion as you may have a pending request on the queue
-      for (Map.Entry<Long, PageCursorInfo> entry : consumedPages.entrySet())
+      synchronized (consumedPages)
       {
-         if (!entry.getValue().isPendingDelete())
+         // Get the first page not marked for deletion
+         // It's important to verify if it's not marked for deletion as you may have a pending request on the queue
+         for (Map.Entry<Long, PageCursorInfo> entry : consumedPages.entrySet())
          {
-            if (entry.getValue().acks.isEmpty())
+            if (!entry.getValue().isPendingDelete())
             {
-               return new PagePositionImpl(entry.getKey(), -1);
-            }
-            else
-            {
-               // The list is not ordered...
-               // This is only done at creation of the queue, so we just scan instead of keeping the list ordened
-               PagePosition retValue = null;
-
-               for (PagePosition pos : entry.getValue().acks)
+               if (entry.getValue().acks.isEmpty())
                {
+                  return new PagePositionImpl(entry.getKey(), -1);
+               }
+               else
+               {
+                  // The list is not ordered...
+                  // This is only done at creation of the queue, so we just scan instead of keeping the list ordened
+                  PagePosition retValue = null;
+
+                  for (PagePosition pos : entry.getValue().acks)
+                  {
+                     if (isTrace)
+                     {
+                        trace("Analizing " + pos);
+                     }
+                     if (retValue == null || retValue.getMessageNr() > pos.getMessageNr())
+                     {
+                        retValue = pos;
+                     }
+                  }
+
                   if (isTrace)
                   {
-                     trace("Analizing " + pos);
+                     trace("Returning initial position " + retValue);
                   }
-                  if (retValue == null || retValue.getMessageNr() > pos.getMessageNr())
-                  {
-                     retValue = pos;
-                  }
-               }
 
-               if (isTrace) 
-               {
-                  trace("Returning initial position " + retValue);
+                  return retValue;
                }
-
-               return retValue;
             }
          }
       }
@@ -489,13 +496,16 @@ public class PageSubscriptionImpl implements PageSubscription
     */
    public long getFirstPage()
    {
-      if (consumedPages.isEmpty())
+      synchronized (consumedPages)
       {
-         return 0;
-      }
-      else
-      {
-         return consumedPages.firstKey();
+         if (consumedPages.isEmpty())
+         {
+            return 0;
+         }
+         else
+         {
+            return consumedPages.firstKey();
+         }
       }
    }
 
@@ -512,6 +522,10 @@ public class PageSubscriptionImpl implements PageSubscription
       synchronized (redeliveries)
       {
          redeliveries.add(position);
+      }
+
+      synchronized (consumedPages)
+      {
          PageCursorInfo pageInfo = consumedPages.get(position.getPageNr());
          if (pageInfo != null)
          {
@@ -595,8 +609,8 @@ public class PageSubscriptionImpl implements PageSubscription
       {
    
          boolean isPersistent = false;
-   
-         synchronized (PageSubscriptionImpl.this)
+
+         synchronized (consumedPages)
          {
             for (PageCursorInfo cursor : consumedPages.values())
             {
@@ -734,7 +748,7 @@ public class PageSubscriptionImpl implements PageSubscription
       return executor;
    }
 
-   private synchronized PageCursorInfo getPageInfo(final PagePosition pos)
+   private PageCursorInfo getPageInfo(final PagePosition pos)
    {
       return getPageInfo(pos, true);
    }
@@ -743,22 +757,25 @@ public class PageSubscriptionImpl implements PageSubscription
     * @param page
     * @return
     */
-   private synchronized PageCursorInfo getPageInfo(final PagePosition pos, boolean create)
+   private PageCursorInfo getPageInfo(final PagePosition pos, boolean create)
    {
-      PageCursorInfo pageInfo = consumedPages.get(pos.getPageNr());
-
-      if (create && pageInfo == null)
+      synchronized (consumedPages)
       {
-         PageCache cache = cursorProvider.getPageCache(pos);
-         if (cache == null)
-         {
-            return null;
-         }
-         pageInfo = new PageCursorInfo(pos.getPageNr(), cache.getNumberOfMessages(), cache);
-         consumedPages.put(pos.getPageNr(), pageInfo);
-      }
+         PageCursorInfo pageInfo = consumedPages.get(pos.getPageNr());
 
-      return pageInfo;
+         if (create && pageInfo == null)
+         {
+            PageCache cache = cursorProvider.getPageCache(pos);
+            if (cache == null)
+            {
+               return null;
+            }
+            pageInfo = new PageCursorInfo(pos.getPageNr(), cache.getNumberOfMessages(), cache);
+            consumedPages.put(pos.getPageNr(), pageInfo);
+         }
+
+         return pageInfo;
+      }
    }
 
    // Package protected ---------------------------------------------
